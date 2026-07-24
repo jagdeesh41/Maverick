@@ -12,7 +12,7 @@ Install → run → what every API does → what every frontend screen does → 
 * Create the database: `psql -U postgres -c "CREATE DATABASE bankchain_db;"`
 * Smart contracts: `cd bankchain-backend/smart-contracts && pip install -r requirements.txt --break-system-packages`
 * Backend: `cd bankchain-backend && mvn clean package spring-boot:repackage`
-* Frontend: `cd bankchain-frontend && npm install && cp .env.example .env`
+* Frontend: `cd bankchain-frontend && npm install`
 
 ## Run (every time)
 
