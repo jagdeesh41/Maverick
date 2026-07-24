@@ -1,0 +1,324 @@
+:root {
+  /* ---- Lloyds Bank palette, pulled from the real Internet Banking UI ---- */
+  --lb-green-900: #013220;
+  --lb-green-800: #0b5c40;
+  --lb-green-700: #0f7a56;   /* header bar */
+  --lb-green-600: #0f9d68;   /* primary buttons / pills */
+  --lb-green-500: #17b378;
+  --lb-green-50:  #e9f5ef;
+
+  --lb-orange-700: #8a4a1f;
+  --lb-orange-600: #b5651d;  /* "Digital Assets" nav highlight */
+  --lb-orange-500: #c9793a;
+
+  --lb-purple: #5b2f8f;      /* FSCS badge */
+
+  --lb-bg: #eef1ec;
+  --lb-surface: #ffffff;
+  --lb-border: #d9ded8;
+  --lb-ink: #16211b;
+  --lb-ink-soft: #4b564e;
+  --lb-danger: #b3261e;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--lb-bg);
+  font-family: var(--font-sans);
+  color: var(--lb-ink);
+}
+
+a { color: var(--lb-green-800); }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.lb-header {
+  background: linear-gradient(180deg, var(--lb-green-700), #0c6b4b);
+  color: #fff;
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.lb-header .brand {
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+}
+
+.lb-secure-badge {
+  background: rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.lb-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.lb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  background: var(--lb-green-600);
+  color: #fff;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.lb-btn:hover { background: var(--lb-green-700); }
+.lb-btn:active { transform: translateY(1px); }
+.lb-btn.outline {
+  background: transparent;
+  color: var(--lb-green-800);
+  border: 2px solid var(--lb-green-600);
+}
+.lb-btn.outline:hover { background: var(--lb-green-50); }
+.lb-btn:disabled { background: #a8b3ac; cursor: not-allowed; }
+
+.lb-card {
+  background: var(--lb-surface);
+  border: 1px solid var(--lb-border);
+  border-radius: 10px;
+  padding: 20px 24px;
+}
+
+.lb-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid #9aa39c;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #fff;
+}
+.lb-input:focus {
+  outline: 3px solid var(--lb-green-500);
+  outline-offset: 1px;
+}
+
+.lb-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.lb-pill-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-weight: 700;
+  border: 2px solid var(--lb-green-600);
+  background: #fff;
+  color: var(--lb-green-800);
+}
+.lb-pill-toggle.active {
+  background: var(--lb-green-600);
+  color: #fff;
+}
+
+.lb-status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.lb-status.active { background: var(--lb-green-50); color: var(--lb-green-800); }
+.lb-status.frozen { background: #fdeceb; color: var(--lb-danger); }
+.lb-status.pending { background: #fff4e0; color: var(--lb-orange-700); }
+.lb-status.settled { background: var(--lb-green-50); color: var(--lb-green-800); }
+.lb-status.locked { background: #fff4e0; color: var(--lb-orange-700); }
+.lb-status.rejected { background: #fdeceb; color: var(--lb-danger); }
+
+.lb-banner {
+  background: linear-gradient(90deg, var(--lb-green-900) 0%, var(--lb-green-700) 55%, var(--lb-orange-600) 130%);
+  color: #fff;
+  border-radius: 12px;
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.lb-error-banner {
+  background: #fdeceb;
+  border: 1px solid #f0b8b3;
+  color: var(--lb-danger);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.lb-success-banner {
+  background: var(--lb-green-50);
+  border: 1px solid #b6e2cc;
+  color: var(--lb-green-800);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+table.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.lb-table th {
+  text-align: left;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--lb-ink-soft);
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--lb-border);
+}
+table.lb-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--lb-border);
+  font-size: 0.95rem;
+}
+
+/* ===================================================================
+   Digital Asset Fabric — sidebar shell
+   A dedicated dark navy shell for the real, backend-connected app,
+   visually distinct from the light Lloyds IB chrome around it, so it
+   reads as "you've entered a different, purpose-built system" rather
+   than more pages bolted onto internet banking.
+=================================================================== */
+:root {
+  --fabric-navy-900: #0a1220;
+  --fabric-navy-800: #101c30;
+  --fabric-navy-700: #17263e;
+  --fabric-line: rgba(255,255,255,0.08);
+}
+
+.fabric-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--lb-bg);
+}
+
+.fabric-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, var(--fabric-navy-900), var(--fabric-navy-800));
+  color: #eef2f0;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.fabric-brand {
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  margin-bottom: 2px;
+}
+.fabric-brand-sub {
+  font-size: 0.72rem;
+  color: #8fa398;
+  margin-bottom: 18px;
+}
+
+.fabric-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--fabric-line);
+  color: #cfe9dd;
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 22px;
+  cursor: pointer;
+  width: fit-content;
+}
+.fabric-back-btn:hover { border-color: rgba(255,255,255,0.3); }
+
+.fabric-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.fabric-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #c7d4cc;
+  text-decoration: none;
+}
+.fabric-nav-link:hover { background: rgba(255,255,255,0.06); }
+.fabric-nav-link.active {
+  background: var(--lb-orange-600);
+  color: #fff;
+}
+
+.fabric-footer {
+  border-top: 1px solid var(--fabric-line);
+  padding-top: 14px;
+  margin-top: 14px;
+  font-size: 0.78rem;
+  color: #8fa398;
+}
+.fabric-footer strong { color: #eef2f0; display: block; font-size: 0.85rem; }
+
+.fabric-main {
+  flex: 1;
+  min-width: 0;
+  padding: 40px 44px 64px;
+}
+
+.fabric-eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--lb-green-700);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 860px) {
+  .fabric-shell { flex-direction: column; }
+  .fabric-sidebar { width: 100%; height: auto; position: relative; }
+  .fabric-main { padding: 24px; }
+}
