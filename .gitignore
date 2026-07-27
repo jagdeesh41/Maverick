@@ -1,0 +1,11 @@
+# Frontend
+bankchain-project/bankchain-frontend/node_modules/
+bankchain-project/bankchain-frontend/dist/
+
+# Backend
+bankchain-project/bankchain-backend/target/
+
+# H2 Database
+bankchain-project/bankchain-backend/data/
+*.mv.db
+*.trace.db
