@@ -27,6 +27,18 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws IOException {
+        if (isCorsPreflight(request)) {
+            String origin = request.getHeader("Origin");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setHeader("Access-Control-Allow-Origin", origin != null ? origin : "*");
+            response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            response.setHeader("Access-Control-Allow-Headers", request.getHeader("Access-Control-Request-Headers") != null
+                    ? request.getHeader("Access-Control-Request-Headers")
+                    : "Authorization, Content-Type");
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+            return true;
+        }
+
         String header = request.getHeader("Authorization");
         String token = (header != null && header.startsWith("Bearer ")) ? header.substring(7) : null;
 
@@ -44,6 +56,10 @@ public class AuthInterceptor implements HandlerInterceptor {
         request.setAttribute("sessionUserId", session.userId());
         request.setAttribute("sessionRole", session.role());
         return true;
+    }
+
+    private boolean isCorsPreflight(HttpServletRequest request) {
+        return "OPTIONS".equalsIgnoreCase(request.getMethod()) && request.getHeader("Origin") != null;
     }
 
     private void reject(HttpServletResponse response, int status, String message) throws IOException {
