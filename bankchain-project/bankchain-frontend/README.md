@@ -4,7 +4,7 @@ A React (Vite) frontend with two layers, matching what you asked for:
 
 1. **Static Lloyds Internet Banking chrome** — login page + accounts
    dashboard, styled to match the real Lloyds IB screens you shared.
-   Nothing on these two pages talks to a backend except login.
+   Nothing on these two pages talks to a backend except login
 2. **The real app** ("Digital Assets") — fully wired to
    `bankchain-backend`. Every button, form, and table here calls a real
    endpoint. This is the part you can actually demo end-to-end
