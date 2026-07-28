@@ -1,6 +1,7 @@
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import LloydsTopBar from '../../components/LloydsTopBar.jsx';
+import FaqChatbot from '../../components/FaqChatbot.jsx';
 
 import CustomerDashboard from './CustomerDashboard.jsx';
 import MyAssets from './MyAssets.jsx';
@@ -103,6 +104,8 @@ export default function DigitalAssetsApp() {
           </Routes>
         </main>
       </div>
+
+      <FaqChatbot isCustomer={isCustomer} />
     </div>
   );
 }

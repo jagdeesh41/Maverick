@@ -379,3 +379,124 @@ table.lb-table td {
   .fabric-sidebar { width: 100%; height: auto; position: relative; }
   .fabric-main { padding: 24px; }
 }
+
+/* ===================================================================
+   FAQ chatbot — floating launcher + panel, shown across the whole
+   Digital Asset Fabric app (Bank Chain).
+=================================================================== */
+.fabric-chat-fab {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: none;
+  background: var(--lb-orange-600);
+  color: #fff;
+  font-size: 1.5rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.fabric-chat-fab:hover { background: var(--lb-orange-700); transform: scale(1.05); }
+
+.fabric-chat-panel {
+  position: fixed;
+  right: 28px;
+  bottom: 98px;
+  width: 360px;
+  max-width: calc(100vw - 40px);
+  max-height: 70vh;
+  background: var(--lb-surface);
+  border: 1px solid var(--lb-border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fabric-chat-header {
+  background: linear-gradient(180deg, var(--lb-green-700), #0c6b4b);
+  color: #fff;
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.fabric-chat-title { font-weight: 800; font-size: 1rem; }
+.fabric-chat-sub { font-size: 0.78rem; opacity: 0.9; margin-top: 2px; }
+.fabric-chat-close {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  border-radius: 999px;
+  width: 26px;
+  height: 26px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.fabric-chat-close:hover { background: rgba(255,255,255,0.25); }
+
+.fabric-chat-body {
+  padding: 14px 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+.fabric-chat-intro {
+  font-size: 0.85rem;
+  color: var(--lb-ink-soft);
+  margin: 0 0 12px;
+}
+
+.fabric-chat-faq {
+  border-bottom: 1px solid var(--lb-border);
+}
+.fabric-chat-faq:last-child { border-bottom: none; }
+
+.fabric-chat-question {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 11px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--lb-ink);
+}
+.fabric-chat-question:hover { color: var(--lb-green-700); }
+
+.fabric-chat-answer {
+  padding: 0 2px 14px;
+  font-size: 0.83rem;
+  color: var(--lb-ink-soft);
+  line-height: 1.45;
+}
+
+.fabric-chat-footer {
+  border-top: 1px solid var(--lb-border);
+  padding: 10px 16px;
+  font-size: 0.75rem;
+  color: var(--lb-ink-soft);
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .fabric-chat-panel {
+    right: 20px;
+    left: 20px;
+    width: auto;
+  }
+  .fabric-chat-fab { right: 20px; }
+}
