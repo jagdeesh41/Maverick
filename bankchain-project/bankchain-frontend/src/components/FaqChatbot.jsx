@@ -1,90 +1,68 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { askAssistant } from '../api.js';
 
-const CUSTOMER_FAQS = [
-  {
-    q: 'What is Bank Chain / the Digital Asset Fabric?',
-    a: "It's Lloyds' platform for tokenizing real-world assets — property, bonds, shares and commodities — so you can view, transfer, and manage them digitally, with programmable inheritance and real-time valuation.",
-  },
-  {
-    q: 'What kinds of assets can I put on Bank Chain?',
-    a: 'Property, bonds, shares, and commodities can all be issued as digital tokens tied to the underlying asset, viewable from "My Assets".',
-  },
-  {
-    q: 'How do I issue a new digital asset?',
-    a: 'Go to "Issue Asset" in the sidebar, fill in the asset details, and submit. Your request goes into the Issuance Queue for approval before the token is created.',
-  },
-  {
-    q: 'How does Transfer / DvP work?',
-    a: '"Transfer / DvP" lets you move an asset to another party as a delivery-versus-payment transaction, so the asset and payment settle together. Transfers need confirmation before they settle.',
-  },
-  {
-    q: 'What is KYC and why do I need it?',
-    a: 'KYC (Know Your Customer) verifies your identity so you can hold and transact in tokenized assets. Complete it from the "KYC" screen — some actions are locked until it\'s approved.',
-  },
-  {
-    q: 'How does Inheritance work?',
-    a: '"Inheritance" lets you set up programmable succession rules for your assets, so they pass to your chosen beneficiaries automatically under the conditions you define.',
-  },
-  {
-    q: 'How do I claim a property left to me?',
-    a: 'Use "Claim a Property" and follow the identity and ownership verification steps. Your claim is reviewed by the bank before the asset is transferred to you.',
-  },
-  {
-    q: 'What is Recovery for?',
-    a: '"Recovery" lets you regain access to your digital assets if you lose your credentials or need to restore control, subject to identity verification and bank approval.',
-  },
-  {
-    q: 'Is Bank Chain secure?',
-    a: 'Yes — the platform is permissioned, programmable, and regulator-ready. Every action (issuance, transfer, approval) is recorded on an auditable ledger.',
-  },
-  {
-    q: 'Who do I contact for more help?',
-    a: 'Use "Help & Support" in the top bar, or speak to your Relationship Manager for anything this assistant can\'t answer.',
-  },
+const CUSTOMER_STARTERS = [
+  'How do I issue a new digital asset?',
+  'How does Transfer / DvP work?',
+  'How does Inheritance work?',
+  'How do I claim a property left to me?',
 ];
 
-const RM_FAQS = [
-  {
-    q: 'What is Bank Chain / the Digital Asset Fabric?',
-    a: "It's Lloyds' platform for tokenizing real-world assets — property, bonds, shares and commodities — giving customers digital ownership with programmable inheritance, while giving you (the RM) approval and oversight tools.",
-  },
-  {
-    q: 'What is the Issuance Queue?',
-    a: 'It lists customer requests to issue new digital assets, waiting for your review and approval before the token is created on-chain.',
-  },
-  {
-    q: 'What are Transfer Confirmations?',
-    a: 'Customer-initiated transfers (DvP) that need your confirmation before the asset and payment legs settle.',
-  },
-  {
-    q: 'How do KYC Approvals work?',
-    a: 'Customer KYC submissions land here for your review — approve or reject to unlock the customer\'s ability to transact in digital assets.',
-  },
-  {
-    q: 'What does Recovery cover for RMs?',
-    a: 'Recovery requests from customers who\'ve lost access to their assets are routed here for identity verification and approval before access is restored.',
-  },
-  {
-    q: 'What is "Look Up a Customer" for?',
-    a: 'It lets you search for a customer and view their digital asset holdings, KYC status, and claims in one place.',
-  },
-  {
-    q: 'What is the Audit Trail?',
-    a: 'A full, timestamped record of every issuance, transfer, approval, and status change across the platform — for compliance and regulatory review.',
-  },
-  {
-    q: 'Is Bank Chain secure and compliant?',
-    a: 'Yes — the platform is permissioned, programmable, and regulator-ready. Every action is recorded on an auditable ledger.',
-  },
+const RM_STARTERS = [
+  'What is the Issuance Queue?',
+  'What are Transfer Confirmations?',
+  'What does the Audit Trail cover?',
+  'How do KYC Approvals work?',
 ];
 
-export default function FaqChatbot({ isCustomer }) {
+/**
+ * Floating "Bank Chain Assistant" chat widget - a Gemini-backed virtual
+ * RM that answers questions about the Digital Asset Fabric solution.
+ * The backend (POST /assistant/chat) proxies to Gemini and grounds it in
+ * a Bank Chain-only system prompt, so no API key or model call happens
+ * in the browser.
+ */
+export default function FaqChatbot({ role }) {
+  const isCustomer = role === 'CUSTOMER';
   const [open, setOpen] = useState(false);
-  const [openIndex, setOpenIndex] = useState(null);
-  const faqs = isCustomer ? CUSTOMER_FAQS : RM_FAQS;
+  const [messages, setMessages] = useState([
+    {
+      sender: 'assistant',
+      text: "Hi, I'm the Bank Chain Assistant. Ask me anything about tokenizing, transferring, or managing your digital assets on this platform.",
+    },
+  ]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const bodyRef = useRef(null);
+  const starters = isCustomer ? CUSTOMER_STARTERS : RM_STARTERS;
 
-  function toggleQuestion(i) {
-    setOpenIndex(openIndex === i ? null : i);
+  useEffect(() => {
+    if (bodyRef.current) {
+      bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+    }
+  }, [messages, open, sending]);
+
+  async function sendMessage(text) {
+    const trimmed = text.trim();
+    if (!trimmed || sending) return;
+
+    const history = messages;
+    setMessages((prev) => [...prev, { sender: 'user', text: trimmed }]);
+    setInput('');
+    setSending(true);
+    try {
+      const { reply } = await askAssistant(role, trimmed, history);
+      setMessages((prev) => [...prev, { sender: 'assistant', text: reply }]);
+    } catch (err) {
+      setMessages((prev) => [...prev, { sender: 'assistant', text: err.message }]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    sendMessage(input);
   }
 
   return (
@@ -92,39 +70,57 @@ export default function FaqChatbot({ isCustomer }) {
       <button
         className="fabric-chat-fab"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? 'Close FAQ chat' : 'Open FAQ chat'}
+        aria-label={open ? 'Close Bank Chain Assistant' : 'Open Bank Chain Assistant'}
       >
         {open ? '✕' : '💬'}
       </button>
 
       {open && (
-        <div className="fabric-chat-panel" role="dialog" aria-label="Bank Chain FAQ assistant">
+        <div className="fabric-chat-panel" role="dialog" aria-label="Bank Chain Assistant chat">
           <div className="fabric-chat-header">
             <div>
               <div className="fabric-chat-title">Bank Chain Assistant</div>
-              <div className="fabric-chat-sub">Frequently asked questions</div>
+              <div className="fabric-chat-sub">Your virtual Relationship Manager</div>
             </div>
             <button className="fabric-chat-close" onClick={() => setOpen(false)} aria-label="Close">✕</button>
           </div>
 
-          <div className="fabric-chat-body">
-            <p className="fabric-chat-intro">
-              Hi, I'm here to help with questions about Bank Chain's Digital Asset Fabric. Tap a question below.
-            </p>
-            {faqs.map((item, i) => (
-              <div key={item.q} className="fabric-chat-faq">
-                <button
-                  className="fabric-chat-question"
-                  onClick={() => toggleQuestion(i)}
-                  aria-expanded={openIndex === i}
-                >
-                  <span>{item.q}</span>
-                  <span>{openIndex === i ? '−' : '+'}</span>
-                </button>
-                {openIndex === i && <div className="fabric-chat-answer">{item.a}</div>}
+          <div className="fabric-chat-body" ref={bodyRef}>
+            {messages.map((m, i) => (
+              <div key={i} className={`fabric-chat-bubble ${m.sender}`}>
+                {m.text}
               </div>
             ))}
+            {sending && (
+              <div className="fabric-chat-bubble assistant fabric-chat-typing">
+                <span />
+                <span />
+                <span />
+              </div>
+            )}
+
+            {messages.length < 3 && (
+              <div className="fabric-chat-starters">
+                {starters.map((q) => (
+                  <button key={q} className="fabric-chat-chip" onClick={() => sendMessage(q)} disabled={sending}>
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          <form className="fabric-chat-inputbar" onSubmit={handleSubmit}>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask about Bank Chain..."
+              aria-label="Message"
+              disabled={sending}
+            />
+            <button type="submit" disabled={sending || !input.trim()}>Send</button>
+          </form>
 
           <div className="fabric-chat-footer">
             Still need help? Contact your Relationship Manager or use Help &amp; Support.

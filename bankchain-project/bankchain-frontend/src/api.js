@@ -259,3 +259,14 @@ export function markTransferPriority(id, priority) {
 export function markClaimPriority(id, priority) {
   return request(`/customer/claims/${id}/priority`, { method: 'POST', body: JSON.stringify({ priority }) });
 }
+
+/* ============================ ASSISTANT ============================= */
+// POST /assistant/chat -> Gemini-backed "Bank Chain Assistant". history is
+// the prior turns in this session, oldest first: [{ sender: 'user'|'assistant', text }].
+// Backend falls back to a static message if Gemini isn't configured/reachable.
+export function askAssistant(role, message, history) {
+  return request('/assistant/chat', {
+    method: 'POST',
+    body: JSON.stringify({ role, message, history }),
+  });
+}

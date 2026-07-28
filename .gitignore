@@ -9,3 +9,9 @@ bankchain-project/bankchain-backend/target/
 bankchain-project/bankchain-backend/data/
 *.mv.db
 *.trace.db
+
+# Local secrets (API keys etc.) - never commit these
+.env
+.env.local
+*.local.properties
+application-local.properties

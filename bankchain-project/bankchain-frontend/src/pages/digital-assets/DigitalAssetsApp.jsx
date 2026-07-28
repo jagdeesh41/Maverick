@@ -105,7 +105,7 @@ export default function DigitalAssetsApp() {
         </main>
       </div>
 
-      <FaqChatbot isCustomer={isCustomer} />
+      <FaqChatbot role={user?.role} />
     </div>
   );
 }
