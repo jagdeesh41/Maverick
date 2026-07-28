@@ -6,9 +6,9 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/maverick-backend:$SHORT_SHA'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/backend:$SHORT_SHA'
       - '-t'
-      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/maverick-backend:latest'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/backend:latest'
       - '.'
 
   # Build frontend image
@@ -18,11 +18,11 @@ steps:
     args:
       - 'build'
       - '--build-arg'
-      - 'VITE_API_BASE_URL=https://maverick-backend-546876428098.asia-south1.run.app'
+      - 'VITE_API_BASE_URL=https://backend-546876428098.asia-south1.run.app'
       - '-t'
-      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/maverick-frontend:$SHORT_SHA'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/frontend:$SHORT_SHA'
       - '-t'
-      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/maverick-frontend:latest'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/frontend:latest'
       - '.'
 
   # Push backend
