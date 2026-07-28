@@ -66,6 +66,7 @@ export default function ApprovalQueue() {
             <button className="lb-btn outline" disabled={busyId === t.id} onClick={() => handle(t.id, 'reject')}>Reject</button>
             <input
               className="lb-input" style={{ maxWidth: 240 }} placeholder="Note if holding…"
+              aria-label="Hold note"
               value={holdNotes[t.id] || ''}
               onChange={(e) => setHoldNotes((n) => ({ ...n, [t.id]: e.target.value }))}
             />

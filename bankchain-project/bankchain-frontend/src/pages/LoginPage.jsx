@@ -68,6 +68,7 @@ export default function LoginPage() {
             <button
               type="button"
               className={`lb-pill-toggle ${role === 'CUSTOMER' ? 'active' : ''}`}
+              aria-pressed={role === 'CUSTOMER'}
               onClick={() => handleRoleClick('CUSTOMER')}
             >
               👤 Customer
@@ -75,6 +76,7 @@ export default function LoginPage() {
             <button
               type="button"
               className={`lb-pill-toggle ${role === 'RM' ? 'active' : ''}`}
+              aria-pressed={role === 'RM'}
               onClick={() => handleRoleClick('RM')}
             >
               💼 Relationship Manager

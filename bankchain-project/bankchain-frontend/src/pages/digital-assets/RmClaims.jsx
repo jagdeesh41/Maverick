@@ -73,6 +73,7 @@ export default function RmClaims() {
               <button className="lb-btn outline" disabled={busyId === c.id} onClick={() => handle(c.id, 'reject')}>Reject</button>
               <input
                 className="lb-input" style={{ maxWidth: 240 }} placeholder="Note if holding…"
+                aria-label="Hold note"
                 value={holdNotes[c.id] || ''}
                 onChange={(e) => setHoldNotes((n) => ({ ...n, [c.id]: e.target.value }))}
               />

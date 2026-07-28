@@ -5,6 +5,10 @@ bankchain-project/bankchain-frontend/dist/
 # Backend
 bankchain-project/bankchain-backend/target/
 
+# Python smart-contracts test venv
+bankchain-project/bankchain-backend/smart-contracts/.venv/
+bankchain-project/bankchain-backend/smart-contracts/__pycache__/
+
 # H2 Database
 bankchain-project/bankchain-backend/data/
 *.mv.db

@@ -140,6 +140,7 @@ export default function AssetDetail() {
           {showHoldForm && (
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               <input className="lb-input" placeholder="Note to the customer (what's missing?)"
+                aria-label="Note to the customer"
                 value={holdNote} onChange={(e) => setHoldNote(e.target.value)} />
               <button className="lb-btn" disabled={busy} onClick={() => runAction(() => holdAsset(assetId, holdNote))}>
                 Send hold

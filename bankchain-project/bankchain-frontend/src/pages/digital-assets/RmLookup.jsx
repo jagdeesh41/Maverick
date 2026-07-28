@@ -37,7 +37,9 @@ export default function RmLookup() {
       </InfoNote>
 
       <form onSubmit={handleSearch} className="lb-card" style={{ display: 'flex', gap: 8 }}>
-        <input className="lb-input" placeholder="e.g. priyal, 3, or a token ID" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <input className="lb-input" placeholder="e.g. priyal, 3, or a token ID"
+          aria-label="Search by user, asset, or token ID"
+          value={query} onChange={(e) => setQuery(e.target.value)} />
         <button className="lb-btn" disabled={busy || !query}>{busy ? 'Searching…' : 'Search'}</button>
       </form>
 
