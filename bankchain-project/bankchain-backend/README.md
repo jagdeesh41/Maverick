@@ -4,7 +4,7 @@ Backend for the Digital Asset Tokenization prototype (Team Maverick,
 Problem Statement #24). Spring Boot + PostgreSQL backend, a real Python
 smart-contract engine, and a mocked Google Cloud Universal Ledger (GCUL)
 adapter standing in for the real blockchain layer until testnet access
-is available.
+is available
 
 ### The three pieces, and how they connect
 
