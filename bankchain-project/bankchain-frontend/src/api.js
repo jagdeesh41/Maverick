@@ -2,21 +2,11 @@
  * api.js
  * ----------------------------------------------------------------------
  * THE ONLY FILE IN THIS FRONTEND THAT TALKS TO THE JAVA BACKEND.
- *
- * Every function here maps 1:1 to one real endpoint in the Spring Boot
- * backend (bankchain-backend). Nothing in this file is mocked — if the
- * backend isn't running, these calls will fail with a network error,
- * which the UI surfaces to you.
- *
- * Base URL comes from VITE_API_BASE_URL (see .env.example). Backend
- * default port is 8081.
- *
- * The backend wraps every response in ApiResponse<T>:
- *   { success: boolean, message: string, data: T }
- * so `request()` below unwraps `.data` for you and throws a JS Error
- * with the backend's `message` if `success` is false (this is how a
- * BusinessRuleException from a smart-contract rule — e.g. "Asset is
- * FROZEN" — reaches the UI).
+ * Every function maps 1:1 to one real endpoint. Base URL from
+ * VITE_API_BASE_URL (.env). Backend wraps responses in ApiResponse<T>
+ * { success, message, data } - request() unwraps .data and throws a JS
+ * Error with the backend's message on failure (this is how a rejected
+ * smart-contract rule reaches the UI as an error banner).
  * ----------------------------------------------------------------------
  */
 
@@ -42,8 +32,6 @@ async function request(path, options = {}) {
     body = null;
   }
 
-  // GlobalExceptionHandler.java returns ApiResponse.error(...) with a
-  // non-2xx HTTP status for BusinessRuleException / ResourceNotFoundException.
   if (!res.ok || (body && body.success === false)) {
     const message = body?.message || `Request failed (HTTP ${res.status})`;
     throw new Error(message);
@@ -53,9 +41,6 @@ async function request(path, options = {}) {
 }
 
 /* ============================== AUTH ============================== */
-// POST /auth/login  -> AuthController.login()
-// Mocked login: username + role only, no password. If the username
-// doesn't exist yet, UserService.login() auto-creates it.
 export function login(username, role) {
   return request('/auth/login', {
     method: 'POST',
@@ -64,13 +49,13 @@ export function login(username, role) {
 }
 
 /* ============================ CUSTOMER ============================= */
-// GET /customer/dashboard/{userId} -> CustomerController.dashboard()
+// GET /customer/dashboard/{userId} -> totals + a real "pendingTransfers" list
 export function getCustomerDashboard(userId) {
   return request(`/customer/dashboard/${userId}`);
 }
 
-// POST /customer/assets/issue -> AssetService.issueAsset()
-// Triggers LedgerService.mint() under the hood (MockGCULAdapter).
+// POST /customer/assets/issue -> mints on the (mocked) ledger, starts
+// PENDING_CONFIRMATION until an RM confirms it in the Issuance Queue.
 export function issueAsset(payload) {
   return request('/customer/assets/issue', {
     method: 'POST',
@@ -78,19 +63,28 @@ export function issueAsset(payload) {
   });
 }
 
-// GET /customer/assets/{userId} -> AssetService.getAssetsForOwner()
+// GET /customer/assets/{userId} -> this customer's HOLDINGS (unitsHeld,
+// totalUnits, valueShare) - not raw asset rows. An asset held by 3
+// people shows up 3 times, once per holder, with each one's own amount.
 export function getMyAssets(userId) {
   return request(`/customer/assets/${userId}`);
 }
 
-// GET /customer/assets/details/{assetId}
+// GET /customer/assets/details/{assetId} -> the instrument + its full
+// cap table (every holder and how much they each hold).
 export function getAssetDetails(assetId) {
   return request(`/customer/assets/details/${assetId}`);
 }
 
-// POST /customer/transfer -> TransferService.initiateTransfer()
-// Backend calls the Python smart contract Rule 1 (check_transfer_allowed)
-// before locking the transfer. Throws BusinessRuleException if FROZEN.
+// GET /customer/transfers/{userId} -> every transfer this user is in,
+// either side, any status. This is what "waiting on RM" is sourced from.
+export function getMyTransfers(userId) {
+  return request(`/customer/transfers/${userId}`);
+}
+
+// POST /customer/transfer -> sellerId is required now (the logged-in
+// customer). Backend checks: asset ACTIVE (Rule 1), then requested
+// units <= what the seller currently holds (Rule 4).
 export function initiateTransfer(payload) {
   return request('/customer/transfer', {
     method: 'POST',
@@ -98,108 +92,170 @@ export function initiateTransfer(payload) {
   });
 }
 
-// POST /customer/inheritance -> InheritanceService.setPolicy()
 export function setInheritancePolicy(payload) {
   return request('/customer/inheritance', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
 }
-
-// GET /customer/inheritance/{assetId}
 export function getInheritancePolicy(assetId) {
   return request(`/customer/inheritance/${assetId}`);
 }
 
-// POST /customer/recovery -> RecoveryService.submitRequest()
 export function submitRecovery(payload) {
   return request('/customer/recovery', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
 }
-
-// GET /customer/recovery/{userId}
 export function getRecoveryRequests(userId) {
   return request(`/customer/recovery/${userId}`);
 }
 
-// POST /customer/kyc -> KycService.submit()
 export function submitKyc(payload) {
   return request('/customer/kyc', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
 }
-
-// GET /customer/kyc/{userId}
 export function getKyc(userId) {
   return request(`/customer/kyc/${userId}`);
 }
 
 /* ================================ RM ================================ */
-// GET /rm/approval-queue -> TransferService.getPendingTransfers() (status=LOCKED)
+// Queue 1: Asset Issuance Confirmations
+export function getPendingConfirmationAssets() {
+  return request('/rm/assets/pending-confirmation');
+}
+export function confirmAsset(id) {
+  return request(`/rm/assets/${id}/confirm`, { method: 'POST' });
+}
+export function holdAsset(id, note) {
+  return request(`/rm/assets/${id}/hold`, { method: 'POST', body: JSON.stringify({ note }) });
+}
+// Customer resubmits proof after being placed on hold
+export function resubmitAssetProof(assetId, proofDocumentBase64) {
+  return request(`/customer/assets/${assetId}/resubmit`, {
+    method: 'POST',
+    body: JSON.stringify({ proofDocumentBase64 }),
+  });
+}
+
+// Queue 2: Transfer Confirmations - flat items, buyer KYC status inline
 export function getApprovalQueue() {
   return request('/rm/approval-queue');
 }
-
-// POST /rm/transfer/{id}/approve -> TransferService.approveTransfer()
-// Backend re-checks Rule 1, then checks Rule 2 (check_approval_allowed)
-// against the buyer's KYC status before settling.
 export function approveTransfer(id) {
   return request(`/rm/transfer/${id}/approve`, { method: 'POST' });
 }
-
-// POST /rm/transfer/{id}/reject
 export function rejectTransfer(id) {
   return request(`/rm/transfer/${id}/reject`, { method: 'POST' });
 }
+export function holdTransfer(id, note) {
+  return request(`/rm/transfer/${id}/hold`, { method: 'POST', body: JSON.stringify({ note }) });
+}
 
-// GET /rm/assets -> AssetService.getAllAssets() (oversight view, all customers)
+/* ========================== PROPERTY CLAIMS ========================== */
+// Any inheritance-style claim on a tokenized asset - not exclusively
+// "after death", though that's the common case. claimantUserId is
+// always the logged-in user filing it, so an approved claim shows up
+// straight in their own portal.
+export function submitClaim(payload) {
+  return request('/customer/claims', { method: 'POST', body: JSON.stringify(payload) });
+}
+export function getClaimsForAsset(assetId) {
+  return request(`/customer/claims/asset/${assetId}`);
+}
+export function getMyClaims(userId) {
+  return request(`/customer/claims/mine/${userId}`);
+}
+export function getAllClaims() {
+  return request('/rm/claims');
+}
+export function approveClaim(id) {
+  return request(`/rm/claims/${id}/approve`, { method: 'POST' });
+}
+export function rejectClaim(id) {
+  return request(`/rm/claims/${id}/reject`, { method: 'POST' });
+}
+export function holdClaim(id, note) {
+  return request(`/rm/claims/${id}/hold`, { method: 'POST', body: JSON.stringify({ note }) });
+}
+
+/* ============================ VALIDATION ============================ */
+// Live proof/account-number validation (Rule 6) - call on blur as the
+// user types a buyer proof, nominee ID, or claim proof value.
+export function validateProof(proofValue) {
+  return request('/customer/validate-proof', { method: 'POST', body: JSON.stringify({ proofValue }) });
+}
+
+/* ============================ RM LOOKUP ============================ */
+// One box, any of: userId, username, assetId, or ledger token ID.
+export function rmLookup(query) {
+  return request(`/rm/lookup?query=${encodeURIComponent(query)}`);
+}
+
+// Oversight: every asset + full cap table
 export function getAllAssets() {
   return request('/rm/assets');
 }
-
-// POST /rm/assets/{id}/freeze -> AssetService.freezeAsset() -> LedgerService.freeze()
 export function freezeAsset(id) {
   return request(`/rm/assets/${id}/freeze`, { method: 'POST' });
 }
-
-// POST /rm/assets/{id}/unfreeze
 export function unfreezeAsset(id) {
   return request(`/rm/assets/${id}/unfreeze`, { method: 'POST' });
 }
 
-// POST /rm/recovery/{id}/advance?status=...
+// Queue 3: Recovery requests
+export function getAllRecoveryRequests() {
+  return request('/rm/recovery');
+}
 export function advanceRecovery(id, status) {
   return request(`/rm/recovery/${id}/advance?status=${encodeURIComponent(status)}`, {
     method: 'POST',
   });
 }
 
-// GET /rm/audit-trail -> AuditService.getAllEvents()
 export function getAuditTrail() {
   return request('/rm/audit-trail');
 }
 
-// POST /rm/kyc/{userId}/approve -> KycService.approve()
+// Queue 4: KYC Approvals - a real list now, not lookup-by-id-only
+export function getPendingKyc() {
+  return request('/rm/kyc/pending');
+}
 export function approveKyc(userId) {
   return request(`/rm/kyc/${userId}/approve`, { method: 'POST' });
 }
 
-// POST /rm/inheritance/{assetId}/dispute -> InheritanceService.raiseDispute()
-// Calls the Python smart contract Rule 3 (evaluate_dispute), which always
-// returns action=FREEZE; Java then actually freezes the asset.
 export function raiseDispute(assetId) {
   return request(`/rm/inheritance/${assetId}/dispute`, { method: 'POST' });
 }
 
 /* =============================== MOCK =============================== */
-// These back the LEGAL / COMPLIANCE roles, which are intentionally
-// mocked in the backend (see MockController.java) — not built out yet.
 export function getLegalClaims() {
   return request('/mock/legal/claims');
 }
 export function getComplianceMonitoring() {
   return request('/mock/compliance/monitoring');
+}
+
+/* ======================== REQUESTS & NOTIFICATIONS ======================== */
+export function getMyRequests(userId) {
+  return request(`/customer/requests/${userId}`);
+}
+export function getMyNotifications(userId) {
+  return request(`/customer/notifications/${userId}`);
+}
+export function markNotificationRead(id) {
+  return request(`/customer/notifications/${id}/read`, { method: 'POST' });
+}
+export function markAssetPriority(id, priority) {
+  return request(`/customer/assets/${id}/priority`, { method: 'POST', body: JSON.stringify({ priority }) });
+}
+export function markTransferPriority(id, priority) {
+  return request(`/customer/transfer/${id}/priority`, { method: 'POST', body: JSON.stringify({ priority }) });
+}
+export function markClaimPriority(id, priority) {
+  return request(`/customer/claims/${id}/priority`, { method: 'POST', body: JSON.stringify({ priority }) });
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { submitKyc, getKyc } from '../../api.js';
+import FileUpload from '../../components/FileUpload.jsx';
 import InfoNote from '../../components/InfoNote.jsx';
 
 // POST /customer/kyc -> KycService.submit()  (status starts PENDING)
@@ -10,7 +11,7 @@ import InfoNote from '../../components/InfoNote.jsx';
 // (check_approval_allowed) in TransferService.approveTransfer().
 export default function Kyc() {
   const { user } = useAuth();
-  const [form, setForm] = useState({ documentType: 'Passport', documentNumber: '' });
+  const [form, setForm] = useState({ documentType: 'Passport', documentNumber: '', proofPhotoBase64: '' });
   const [current, setCurrent] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -63,6 +64,11 @@ export default function Kyc() {
           <input className="lb-input" required value={form.documentNumber}
             onChange={(e) => setForm((f) => ({ ...f, documentNumber: e.target.value }))} />
         </div>
+        <FileUpload
+          label="Photo of your document"
+          value={form.proofPhotoBase64}
+          onChange={(v) => setForm((f) => ({ ...f, proofPhotoBase64: v }))}
+        />
         {error && <div className="lb-error-banner">{error}</div>}
         <button className="lb-btn" disabled={busy}>{busy ? 'Submitting…' : 'Submit for approval'}</button>
       </form>

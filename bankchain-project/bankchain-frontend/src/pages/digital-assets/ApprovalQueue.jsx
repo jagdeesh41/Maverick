@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react';
-import { getApprovalQueue, approveTransfer, rejectTransfer } from '../../api.js';
+import { getApprovalQueue, approveTransfer, rejectTransfer, holdTransfer } from '../../api.js';
 import InfoNote from '../../components/InfoNote.jsx';
 
-// GET /rm/approval-queue -> transfers with status LOCKED
-// POST /rm/transfer/{id}/approve -> re-checks Rule 1 (frozen?) AND
-//   Rule 2 (buyer KYC APPROVED?) via the Python smart contract, then
-//   settles. Rejecting bypasses both rules and just marks REJECTED.
 export default function ApprovalQueue() {
   const [transfers, setTransfers] = useState(null);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState(null);
+  const [holdNotes, setHoldNotes] = useState({});
 
   function load() {
-    getApprovalQueue().then(setTransfers).catch((e) => setError(e.message));
+    getApprovalQueue()
+      .then((list) => setTransfers([...list].sort((a, b) => (b.priority - a.priority))))
+      .catch((e) => setError(e.message));
   }
   useEffect(load, []);
 
@@ -21,7 +20,8 @@ export default function ApprovalQueue() {
     setError('');
     try {
       if (action === 'approve') await approveTransfer(id);
-      else await rejectTransfer(id);
+      else if (action === 'reject') await rejectTransfer(id);
+      else await holdTransfer(id, holdNotes[id] || '');
       load();
     } catch (e) {
       setError(`Transfer #${id}: ${e.message}`);
@@ -32,44 +32,49 @@ export default function ApprovalQueue() {
 
   return (
     <div>
-      <h1 style={{ marginTop: 0 }}>Approval Queue</h1>
+      <h1 style={{ marginTop: 0 }}>Transfer Confirmations</h1>
       <InfoNote>
-        Live from <code>GET /rm/approval-queue</code>. Approving calls the
-        Python smart contract engine twice (Rule 1 then Rule 2) — if the
-        buyer's KYC isn't APPROVED yet, you'll see the exact rejection
-        reason returned by <code>contracts.py</code>.
+        Live from <code>GET /rm/approval-queue</code> (LOCKED and ON_HOLD). Approving
+        re-checks the asset (Rule 1) and seller's holding (Rule 4), then buyer KYC
+        (Rule 2). If anything looks fishy, hold and ask for reverification instead.
       </InfoNote>
 
       {error && <div className="lb-error-banner">{error}</div>}
       {!transfers && !error && <p>Loading…</p>}
       {transfers && transfers.length === 0 && <p>Nothing pending.</p>}
 
-      {transfers && transfers.length > 0 && (
-        <table className="lb-table">
-          <thead>
-            <tr><th>ID</th><th>Asset</th><th>Buyer</th><th>Units</th><th>Status</th><th></th></tr>
-          </thead>
-          <tbody>
-            {transfers.map((t) => (
-              <tr key={t.id}>
-                <td>#{t.id}</td>
-                <td>#{t.asset?.id} — {t.asset?.assetType}</td>
-                <td>{t.buyerCustomerId}</td>
-                <td>{t.units}</td>
-                <td><span className={`lb-status ${t.status.toLowerCase()}`}>{t.status}</span></td>
-                <td style={{ display: 'flex', gap: 8 }}>
-                  <button className="lb-btn" disabled={busyId === t.id} onClick={() => handle(t.id, 'approve')}>
-                    Approve
-                  </button>
-                  <button className="lb-btn outline" disabled={busyId === t.id} onClick={() => handle(t.id, 'reject')}>
-                    Reject
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {transfers && transfers.map((t) => (
+        <div key={t.id} className="lb-card" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <strong>Transfer #{t.id}</strong> — Asset #{t.assetId} ({t.assetType}), {t.units} unit(s)
+              <div style={{ color: 'var(--lb-ink-soft)', marginTop: 4 }}>
+                {t.sellerName} → {t.buyerUsername}
+              </div>
+              {t.rmNote && <div style={{ marginTop: 6, fontSize: '0.85rem' }}><strong>Your note:</strong> {t.rmNote}</div>}
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <span className={`lb-status ${t.status.toLowerCase()}`}>{t.status.replace('_', ' ')}</span>
+              <div style={{ marginTop: 6 }}>
+                Buyer KYC: <span className={`lb-status ${(t.buyerKycStatus || 'pending').toLowerCase()}`}>{t.buyerKycStatus || 'NO RECORD'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button className="lb-btn" disabled={busyId === t.id} onClick={() => handle(t.id, 'approve')}>Approve</button>
+            <button className="lb-btn outline" disabled={busyId === t.id} onClick={() => handle(t.id, 'reject')}>Reject</button>
+            <input
+              className="lb-input" style={{ maxWidth: 240 }} placeholder="Note if holding…"
+              value={holdNotes[t.id] || ''}
+              onChange={(e) => setHoldNotes((n) => ({ ...n, [t.id]: e.target.value }))}
+            />
+            <button className="lb-btn outline" disabled={busyId === t.id} onClick={() => handle(t.id, 'hold')}>
+              Hold — reverify
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -21,9 +21,17 @@ public class RecoveryRequest {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    private String recoveryReason;     // "Lost device"
-    private String verificationMethod; // "Bank KYC + MFA"
-    private String emergencyContact;
+    private String recoveryReason;
+    private String verificationMethod;
+
+    @Column(nullable = false)
+    private String phoneNumber;
+
+    @Column(nullable = false)
+    private String email;
+
+    @Lob
+    private String proofDocumentBase64; // ID/KYC-style proof supporting the recovery request
 
     @Column(nullable = false)
     private String status; // REQUESTED, IDENTITY_PROOFING, GOVERNANCE_APPROVAL, RESET

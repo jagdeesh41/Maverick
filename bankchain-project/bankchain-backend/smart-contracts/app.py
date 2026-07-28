@@ -38,10 +38,46 @@ def check_approval():
     return jsonify(result)
 
 
+@app.route("/rules/check-units", methods=["POST"])
+def check_units():
+    body = request.get_json(force=True)
+    result = contracts.check_units_available(body.get("availableUnits"), body.get("requestedUnits"))
+    return jsonify(result)
+
+
+@app.route("/rules/validate-proof", methods=["POST"])
+def validate_proof_route():
+    body = request.get_json(force=True)
+    result = contracts.validate_proof(body.get("proofValue"))
+    return jsonify(result)
+
+
+@app.route("/rules/death-claim", methods=["POST"])
+def death_claim():
+    body = request.get_json(force=True)
+    result = contracts.evaluate_death_claim(body.get("claimantRelation"), bool(body.get("hasCertificate")))
+    return jsonify(result)
+
+
 @app.route("/rules/dispute", methods=["POST"])
 def dispute():
     body = request.get_json(force=True)
     result = contracts.evaluate_dispute(body.get("assetId"), body.get("currentStatus"))
+    return jsonify(result)
+
+
+@app.route("/rules/issuance", methods=["POST"])
+def issuance():
+    body = request.get_json(force=True)
+    result = contracts.evaluate_issuance(body.get("assetType"), body.get("ownershipPercent"), bool(body.get("hasProof")))
+    return jsonify(result)
+
+
+@app.route("/rules/recovery-advance", methods=["POST"])
+def recovery_advance():
+    body = request.get_json(force=True)
+    result = contracts.evaluate_recovery_advance(
+        bool(body.get("hasProof")), bool(body.get("hasPhone")), bool(body.get("hasEmail")))
     return jsonify(result)
 
 

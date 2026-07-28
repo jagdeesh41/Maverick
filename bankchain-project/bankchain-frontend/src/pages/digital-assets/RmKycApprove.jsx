@@ -1,70 +1,61 @@
-import { useState } from 'react';
-import { getKyc, approveKyc } from '../../api.js';
+import { useEffect, useState } from 'react';
+import { getPendingKyc, approveKyc } from '../../api.js';
 import InfoNote from '../../components/InfoNote.jsx';
+import ProofViewer from '../../components/ProofViewer.jsx';
 
-// GET /customer/kyc/{userId} + POST /rm/kyc/{userId}/approve
-//
-// Honest note: the backend has no "list all pending KYC records" endpoint
-// (only a lookup by userId), and per your instruction the backend isn't
-// being touched — so this screen works by looking up one user at a time
-// by their userId. Find userId values from the Approval Queue (buyer
-// username) or by asking the customer.
 export default function RmKycApprove() {
-  const [userId, setUserId] = useState('');
-  const [record, setRecord] = useState(null);
+  const [records, setRecords] = useState(null);
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busyId, setBusyId] = useState(null);
 
-  async function handleLookup(e) {
-    e.preventDefault();
-    setError('');
-    setRecord(null);
-    try {
-      setRecord(await getKyc(userId));
-    } catch (err) {
-      setError(err.message);
-    }
+  function load() {
+    getPendingKyc().then(setRecords).catch((e) => setError(e.message));
   }
+  useEffect(load, []);
 
-  async function handleApprove() {
-    setBusy(true);
+  async function handleApprove(userId) {
+    setBusyId(userId);
     setError('');
     try {
-      setRecord(await approveKyc(userId));
-    } catch (err) {
-      setError(err.message);
+      await approveKyc(userId);
+      load();
+    } catch (e) {
+      setError(e.message);
     } finally {
-      setBusy(false);
+      setBusyId(null);
     }
   }
 
   return (
-    <div style={{ maxWidth: 560 }}>
+    <div>
       <h1 style={{ marginTop: 0 }}>KYC Approvals</h1>
       <InfoNote>
-        The backend only exposes lookup-by-userId (no "pending list"
-        endpoint), so look up a specific user, then approve.
+        Live from <code>GET /rm/kyc/pending</code>. Approving now runs the
+        document number through smart contract Rule 6 and requires a proof
+        photo on file — required before that person can be a buyer in any transfer.
       </InfoNote>
 
-      <form onSubmit={handleLookup} className="lb-card" style={{ display: 'flex', gap: 8 }}>
-        <input className="lb-input" type="number" placeholder="User ID" required
-          value={userId} onChange={(e) => setUserId(e.target.value)} />
-        <button className="lb-btn outline" type="submit">Look up</button>
-      </form>
+      {error && <div className="lb-error-banner">{error}</div>}
+      {!records && !error && <p>Loading…</p>}
+      {records && records.length === 0 && <p>Nothing pending.</p>}
 
-      {error && <div className="lb-error-banner" style={{ marginTop: 16 }}>{error}</div>}
-
-      {record && (
-        <div className="lb-card" style={{ marginTop: 16 }}>
-          <div>Document: {record.documentType} — {record.documentNumber}</div>
-          <div style={{ marginTop: 6 }}>
-            Status: <span className={`lb-status ${record.status.toLowerCase()}`}>{record.status}</span>
+      {records && records.map((k) => (
+        <div key={k.userId} className="lb-card" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <strong>{k.fullName}</strong> <span style={{ color: 'var(--lb-ink-soft)' }}>({k.username})</span>
+              <div style={{ color: 'var(--lb-ink-soft)', marginTop: 4 }}>{k.documentType} — {k.documentNumber}</div>
+            </div>
+            <ProofViewer value={k.proofPhotoBase64} />
           </div>
-          <button className="lb-btn" style={{ marginTop: 12 }} disabled={busy || record.status === 'APPROVED'} onClick={handleApprove}>
-            {busy ? 'Approving…' : 'Approve KYC'}
+          <button
+            className="lb-btn" style={{ marginTop: 12 }}
+            disabled={busyId === k.userId} onClick={() => handleApprove(k.userId)}
+          >
+            {busyId === k.userId ? 'Approving…' : 'Approve'}
           </button>
         </div>
-      )}
+      ))}
     </div>
   );
 }

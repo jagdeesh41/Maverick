@@ -20,10 +20,13 @@ public class Kyc {
     private User user;
 
     @Column(nullable = false)
-    private String documentType; // Passport, Driver's License...
+    private String documentType;
 
     @Column(nullable = false)
     private String documentNumber;
+
+    @Lob
+    private String proofPhotoBase64;
 
     @Column(nullable = false)
     private String status; // PENDING, APPROVED, REJECTED

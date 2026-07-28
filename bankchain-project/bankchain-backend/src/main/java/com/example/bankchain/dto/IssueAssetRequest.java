@@ -22,7 +22,18 @@ public class IssueAssetRequest {
     @NotNull @Positive
     private Integer ownershipUnits;
 
+    // 100 for fully-owned instruments; less than 100 if e.g. Real Estate
+    // still has an outstanding mortgage. Frontend defaults/locks this per
+    // asset type; backend just stores whatever is sent (defaults to 100).
+    private Integer ownershipPercent;
+
     private String policyTemplate;
 
     private String nominee;
+
+    // SELF, FAMILY, FRIEND, FAMILY_FRIEND, RELATIVE
+    private String relationType;
+
+    // base64 photo/document proving the asset's existence/ownership
+    private String proofDocumentBase64;
 }

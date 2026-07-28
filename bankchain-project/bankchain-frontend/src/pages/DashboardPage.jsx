@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import LloydsTopBar from '../components/LloydsTopBar.jsx';
 
 /**
  * Static Lloyds Internet Banking "home" screen — matches your 3
@@ -13,7 +14,7 @@ import { useAuth } from '../context/AuthContext.jsx';
  * where the real, backend-connected app starts.
  */
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
 
   const accounts = [
@@ -31,28 +32,9 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <header className="lb-header">
-        <span className="brand">LLOYDS BANK</span>
-        <span style={{ fontSize: '0.85rem', opacity: 0.9, textDecoration: 'underline' }}>Cookie Policy</span>
-      </header>
+      <LloydsTopBar />
 
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '20px 24px 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h2 style={{ margin: '0 0 4px' }}>{user?.fullName || user?.username}</h2>
-            <span style={{ fontSize: '0.85rem', color: 'var(--lb-ink-soft)' }}>🔒 Last logged on today</span>
-          </div>
-          <nav style={{ display: 'flex', gap: 24, fontWeight: 700, color: 'var(--lb-green-800)', flexWrap: 'wrap' }}>
-            <span>🏠</span>
-            <span>Your Accounts ⌄</span>
-            <span>Your Profile ⌄</span>
-            <span>Your Security</span>
-            <span>Help &amp; Support ⌄</span>
-            <span>✉️</span>
-            <span style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>Log off</span>
-          </nav>
-        </div>
-      </div>
+
 
       <div style={{ maxWidth: 1180, margin: '20px auto 0', padding: '0 24px', display: 'flex', gap: 24 }}>
         <aside style={{ width: 260, flexShrink: 0 }}>

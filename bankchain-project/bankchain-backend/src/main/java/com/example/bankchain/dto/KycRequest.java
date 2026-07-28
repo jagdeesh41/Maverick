@@ -11,8 +11,10 @@ public class KycRequest {
     private Long userId;
 
     @NotBlank
-    private String documentType;   // Passport, Driver's License...
+    private String documentType;
 
     @NotBlank
     private String documentNumber;
+
+    private String proofPhotoBase64;
 }

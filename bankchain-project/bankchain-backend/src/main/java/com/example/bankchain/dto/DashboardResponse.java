@@ -18,5 +18,6 @@ public class DashboardResponse {
     private BigDecimal portfolioValue;
     private long pendingApprovals;
     private String complianceStatus;
-    private List<AssetResponse> assets;
+    private List<HoldingResponse> assets;
+    private List<TransferQueueItemResponse> pendingTransfers; // "waiting on RM" list, not just a count
 }

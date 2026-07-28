@@ -21,16 +21,36 @@ public class Transfer {
     @JoinColumn(name = "asset_id", nullable = false)
     private Asset asset;
 
+    @ManyToOne
+    @JoinColumn(name = "seller_id", nullable = false)
+    private User seller;
+
     @Column(nullable = false)
     private String buyerCustomerId;
 
     @Column(nullable = false)
     private Integer units;
 
-    private String settlementRail; // "Tokenised deposit rail"
+    private String settlementRail;
+
+    @Lob
+    private String transfereeProofBase64; // ID proof of the person receiving, for later verification
+
+    private String buyerProofType;  // ACCOUNT_NUMBER or ID_NUMBER
+    private String buyerProofValue;
 
     @Column(nullable = false)
-    private String status; // KYC_PENDING, LOCKED, SETTLED, REJECTED
+    private boolean consentGiven;
+
+    private String rmNote;
+
+    @Column(nullable = false)
+    private boolean priority;
+
+    private String contractHash; // immutable record of this transfer, set once LOCKED // set when RM places this ON_HOLD for reverification
+
+    @Column(nullable = false)
+    private String status; // LOCKED, ON_HOLD, SETTLED, REJECTED
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -41,7 +61,7 @@ public class Transfer {
             createdAt = LocalDateTime.now();
         }
         if (status == null) {
-            status = "KYC_PENDING";
+            status = "LOCKED";
         }
     }
 }

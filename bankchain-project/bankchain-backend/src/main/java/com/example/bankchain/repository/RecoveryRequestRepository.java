@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface RecoveryRequestRepository extends JpaRepository<RecoveryRequest, Long> {
     List<RecoveryRequest> findByUserId(Long userId);
+    List<RecoveryRequest> findAllByOrderByCreatedAtDesc();
 }
