@@ -2,7 +2,7 @@ steps:
   # Build backend image
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-backend'
-    dir: 'bankchain-backend'
+    dir: 'bankchain-project/bankchain-backend'
     args:
       - 'build'
       - '-t'
@@ -14,7 +14,7 @@ steps:
   # Build frontend image
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-frontend'
-    dir: 'bankchain-frontend'
+    dir: 'bankchain-project/bankchain-frontend'
     args:
       - 'build'
       - '-t'
