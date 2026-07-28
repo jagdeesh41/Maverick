@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo } from 'reactt';
+import { createContext, useContext, useState, useMemo } from 'react';
 import { USERS } from '../mock/mockData';
 
 const AuthContext = createContext(null);
