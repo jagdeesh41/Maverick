@@ -69,7 +69,7 @@ public class AssetService {
 
         return toAssetResponse(saved);
     }
-h
+
     public AssetResponse confirmAsset(Long assetId) {
         Asset asset = getAssetOrThrow(assetId);
         if (!"PENDING_CONFIRMATION".equals(asset.getStatus()) && !"ON_HOLD".equals(asset.getStatus())) {
@@ -217,7 +217,6 @@ h
                 .valueShare(valueShare(asset, holding.getUnitsHeld()))
                 .status(asset.getStatus())
                 .rmNote(asset.getRmNote())
-                .priority(asset.isPriority())
                 .ledgerTokenId(asset.getLedgerTokenId())
                 .nominee(asset.getNominee())
                 .policyTemplate(asset.getPolicyTemplate())
