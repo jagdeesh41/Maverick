@@ -33,7 +33,7 @@ export default function DigitalAssetsApp() {
       <LloydsTopBar />
       <div className="fabric-shell">
         <aside className="fabric-sidebar">
-          <div className="fabric-brand">BankChain</div>
+          <div className="fabric-brand">Bank Chain</div>
           <div className="fabric-brand-sub">Digital Asset Fabric</div>
 
           <nav className="fabric-nav" style={{ marginTop: 18 }}>
