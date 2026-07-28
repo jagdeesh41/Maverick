@@ -12,12 +12,27 @@
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
 
+// Bearer token issued by POST /auth/login, kept in module memory. AuthContext
+// sets this on login/page-load and clears it on logout - see setAuthToken/clearAuthToken.
+let authToken = null;
+
+export function setAuthToken(token) {
+  authToken = token;
+}
+
+export function clearAuthToken() {
+  authToken = null;
+}
+
 async function request(path, options = {}) {
   let res;
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
   try {
     res = await fetch(`${BASE_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
       ...options,
+      headers,
     });
   } catch (networkErr) {
     throw new Error(
@@ -41,11 +56,15 @@ async function request(path, options = {}) {
 }
 
 /* ============================== AUTH ============================== */
-export function login(username, role) {
+export function login(username, role, password) {
   return request('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ username, role }),
+    body: JSON.stringify({ username, role, password }),
   });
+}
+
+export function logout() {
+  return request('/auth/logout', { method: 'POST' });
 }
 
 /* ============================ CUSTOMER ============================= */

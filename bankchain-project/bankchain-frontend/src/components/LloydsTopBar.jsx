@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { logout } from '../api.js';
 
 /**
  * Shown on every authenticated screen (Dashboard + the whole Digital
@@ -12,7 +13,12 @@ export default function LloydsTopBar() {
   const { user, setUser } = useAuth();
   const navigate = useNavigate();
 
-  function logOff() {
+  async function logOff() {
+    try {
+      await logout(); // invalidates the token server-side (best-effort)
+    } catch {
+      // backend unreachable or token already gone - still clear locally
+    }
     setUser(null);
     navigate('/');
   }

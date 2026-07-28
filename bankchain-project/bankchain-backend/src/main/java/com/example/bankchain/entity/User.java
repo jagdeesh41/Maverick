@@ -28,6 +28,8 @@ public class User {
     @Column(nullable = false)
     private boolean enabled;
 
-    // No real password/auth flow for the hackathon build.
-    // Every user is treated as pre-authenticated once the role is picked in the UI.
+    // BCrypt hash, never the raw password. Set on first login for a new
+    // username (auto-provision) and checked on every login after that.
+    @Column(nullable = false)
+    private String password;
 }

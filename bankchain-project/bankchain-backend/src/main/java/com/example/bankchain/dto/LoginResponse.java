@@ -15,4 +15,8 @@ public class LoginResponse {
     private String fullName;
     private String role;
     private boolean verifiedCustomer;
+
+    // Bearer token for this session - send it back as "Authorization: Bearer <token>"
+    // on every /customer/** and /rm/** call (see AuthInterceptor).
+    private String token;
 }

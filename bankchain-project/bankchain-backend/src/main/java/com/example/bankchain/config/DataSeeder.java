@@ -6,6 +6,7 @@ import com.example.bankchain.service.ledger.LedgerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -25,9 +26,16 @@ public class DataSeeder implements CommandLineRunner {
     private final InheritancePolicyRepository inheritancePolicyRepository;
     private final PropertyClaimRepository propertyClaimRepository;
     private final LedgerService ledgerService;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${app.seed.enabled:true}")
     private boolean seedEnabled;
+
+    // Demo password for every seeded user (priyal, rahul, ananya, rm.admin,
+    // legal.exec, compliance.audit) - shown on the login screen. Any new
+    // username typed at login provisions itself with whatever password is
+    // entered, same as a real first-time signup.
+    public static final String DEMO_PASSWORD = "Passw0rd1";
 
     // A real, valid placeholder PNG (base64) - so seed data actually renders
     // as an image on RM screens, same as a real uploaded photo would. Real
@@ -77,12 +85,13 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         // ---- Users (6) ----
-        User priyal = userRepository.save(User.builder().username("priyal").fullName("Priyal Agarwal").role(Role.CUSTOMER).enabled(true).build());
-        User rahul = userRepository.save(User.builder().username("rahul").fullName("Rahul Sharma").role(Role.CUSTOMER).enabled(true).build());
-        User ananya = userRepository.save(User.builder().username("ananya").fullName("Ananya Iyer").role(Role.CUSTOMER).enabled(true).build());
-        User rmAdmin = userRepository.save(User.builder().username("rm.admin").fullName("RM Admin").role(Role.RM).enabled(true).build());
-        userRepository.save(User.builder().username("legal.exec").fullName("Legal Executor").role(Role.LEGAL).enabled(true).build());
-        userRepository.save(User.builder().username("compliance.audit").fullName("Compliance Auditor").role(Role.COMPLIANCE).enabled(true).build());
+        String seededPassword = passwordEncoder.encode(DEMO_PASSWORD);
+        User priyal = userRepository.save(User.builder().username("priyal").fullName("Priyal Agarwal").role(Role.CUSTOMER).password(seededPassword).enabled(true).build());
+        User rahul = userRepository.save(User.builder().username("rahul").fullName("Rahul Sharma").role(Role.CUSTOMER).password(seededPassword).enabled(true).build());
+        User ananya = userRepository.save(User.builder().username("ananya").fullName("Ananya Iyer").role(Role.CUSTOMER).password(seededPassword).enabled(true).build());
+        User rmAdmin = userRepository.save(User.builder().username("rm.admin").fullName("RM Admin").role(Role.RM).password(seededPassword).enabled(true).build());
+        userRepository.save(User.builder().username("legal.exec").fullName("Legal Executor").role(Role.LEGAL).password(seededPassword).enabled(true).build());
+        userRepository.save(User.builder().username("compliance.audit").fullName("Compliance Auditor").role(Role.COMPLIANCE).password(seededPassword).enabled(true).build());
 
         // ---- Assets + holdings (5) ----
         // Fixed Deposit / Bond / Equity / Commodity = fully owned (100%) once issued.

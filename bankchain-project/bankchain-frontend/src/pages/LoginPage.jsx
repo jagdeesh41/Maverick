@@ -36,8 +36,8 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const result = await login(userId.trim(), role);
-      setUser(result); // { userId, username, fullName, role, verifiedCustomer }
+      const result = await login(userId.trim(), role, password);
+      setUser(result); // { userId, username, fullName, role, verifiedCustomer, token }
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);
@@ -104,9 +104,10 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 className="lb-input"
-                placeholder="Enter any password to continue"
+                placeholder="Demo password: Passw0rd1"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
             </div>
 
@@ -137,10 +138,12 @@ export default function LoginPage() {
           )}
 
           <div className="lb-card" style={{ marginTop: 24, background: 'var(--lb-green-50)', borderColor: '#b6e2cc' }}>
-            <strong>Prototype demo</strong> — authentication is mocked. Any
-            password signs you in; the User ID above is sent as-is to{' '}
-            <code>POST /auth/login</code> on the real backend, which resolves
-            or auto-creates that user with the role you picked.
+            <strong>Prototype demo</strong> — MFA/KYC are mocked, but the
+            password is real and checked against a stored (BCrypt-hashed)
+            value. Seeded demo accounts (priyal, rahul, ananya, rm.admin,
+            legal.exec, compliance.audit) use password <code>Passw0rd1</code>.
+            Typing a brand-new User ID provisions it with whatever password
+            you enter — every login after that must match it.
           </div>
 
           <div style={{ marginTop: 32, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
