@@ -1,0 +1,44 @@
+steps:
+  # Build frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'docker-build-frontend'
+    dir: 'bankchain-project/bankchain-frontend'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'VITE_API_BASE_URL=https://backend-546876428098.asia-south1.run.app'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/frontend:$SHORT_SHA'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/frontend:latest'
+      - '.'
+
+  # Push frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-frontend-to-gar'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/frontend'
+
+  # Deploy frontend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-frontend-to-cloud-run'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'frontend'
+      - '--image=asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/frontend:$SHORT_SHA'
+      - '--region=asia-south1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+
+images:
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/frontend:$SHORT_SHA'
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/maverick/frontend:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1200s'
