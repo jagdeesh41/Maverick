@@ -4,7 +4,7 @@ Team Maverick · Problem Statement #24 (Digital Asset Tokenization)
 
 Install → run → what every API does → what every frontend screen does → the smart contract rules → the ledger.
 
----
+----
 
 ## Install (one-time)
 
