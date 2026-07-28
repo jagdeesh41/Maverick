@@ -1,0 +1,51 @@
+steps:
+  # Build backend image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-backend'
+    dir: 'bankchain-backend'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/hackathon/hackathon-backend:$SHORT_SHA'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/hackathon/hackathon-backend:latest'
+      - '.'
+
+  # Build frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-frontend'
+    dir: 'bankchain-frontend'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/hackathon/hackathon-frontend:$SHORT_SHA'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/hackathon/hackathon-frontend:latest'
+      - '.'
+
+  # Push backend
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-backend'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/hackathon/hackathon-backend'
+
+  # Push frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-frontend'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/hackathon/hackathon-frontend'
+
+images:
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/hackathon/hackathon-backend:$SHORT_SHA'
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/hackathon/hackathon-backend:latest'
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/hackathon/hackathon-frontend:$SHORT_SHA'
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/hackathon/hackathon-frontend:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1200s'
