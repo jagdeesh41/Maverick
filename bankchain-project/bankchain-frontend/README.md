@@ -7,7 +7,7 @@ A React (Vite) frontend with two layers, matching what you asked for:
    Nothing on these two pages talks to a backend except login.
 2. **The real app** ("Digital Assets") — fully wired to
    `bankchain-backend`. Every button, form, and table here calls a real
-   endpoint. This is the part you can actually demo end-to-end.
+   endpoint. This is the part you can actually demo end-to-end
 
 The single entry point from layer 1 into layer 2 is the **"Open Digital
 Assets"** button / **"DIGITAL ASSETS"** nav item on the dashboard —
