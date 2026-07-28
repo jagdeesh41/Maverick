@@ -6,7 +6,7 @@ smart-contract engine, and a mocked Google Cloud Universal Ledger (GCUL)
 adapter standing in for the real blockchain layer until testnet access
 is available
 
-### The three pieces, and how they connect
+### The three pieces, and how they connec
 
 ```
  Customer / RM (Swagger, or your frontend UI)
