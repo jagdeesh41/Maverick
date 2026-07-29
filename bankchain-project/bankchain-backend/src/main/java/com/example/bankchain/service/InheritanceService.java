@@ -94,7 +94,7 @@ public class InheritanceService {
         InheritancePolicy saved = inheritancePolicyRepository.save(policy);
 
         if ("FREEZE".equalsIgnoreCase(decision.getAction())) {
-            assetService.freezeAsset(assetId);
+            assetService.raiseDisputeAndFreeze(assetId);
         }
 
         auditService.log("Inheritance dispute raised", "Smart contract (Python)", "Recorded", decision.getReason());

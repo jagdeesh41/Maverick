@@ -18,6 +18,11 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- Spring Boot 3.1.0's default Lombok predates JDK 21 support and
+             breaks on javac's internal AST changes (NoSuchFieldError on
+             JCTree$JCImport.qualid) when compiled with a JDK 21 toolchain -
+             override with a version that has confirmed JDK 21 support. -->
+        <lombok.version>1.18.34</lombok.version>
     </properties>
 
     <dependencies>

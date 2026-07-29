@@ -31,6 +31,7 @@ public class TransferService {
     private final AssetService assetService;
     private final AssetHoldingRepository holdingRepository;
     private final LedgerService ledgerService;
+    private final UserService userService;
     private final UserRepository userRepository;
     private final KycRepository kycRepository;
     private final AuditService auditService;
@@ -89,8 +90,9 @@ public class TransferService {
                 .status("LOCKED")
                 .build();
 
-        ledgerService.transfer(asset.getLedgerTokenId(), request.getUnits(), request.getBuyerCustomerId());
-
+        // No ledger call here - units only actually move on RM approval (see
+        // approveTransfer). Calling transfer() at initiation would move real
+        // balance before anyone has approved anything.
         Transfer saved = transferRepository.save(transfer);
 
         notificationService.notify(seller, "You initiated a transfer of " + transfer.getUnits() + " unit(s) of asset #"
@@ -139,6 +141,16 @@ public class TransferService {
             auditService.log("Transfer approval rejected", "Smart contract (Python)", "Blocked", approvalDecision.getReason());
             throw new BusinessRuleException(approvalDecision.getReason());
         }
+
+        // ---- Real ledger settlement, before the Postgres split below ----
+        // kyc_approved lives per-contract on the ledger (not globally), so
+        // the already-APPROVED Postgres status gets attested on THIS
+        // asset's contract specifically before transfer can succeed there.
+        User sellerWithLedger = userService.ensureLedgerAccount(transfer.getSeller());
+        User buyerWithLedger = userService.ensureLedgerAccount(buyer.get());
+        ledgerService.setKycStatus(asset.getLedgerTokenId(), buyerWithLedger.getLedgerAccountAlias(), true);
+        ledgerService.transfer(asset.getLedgerTokenId(), sellerWithLedger.getLedgerAccountAlias(),
+                buyerWithLedger.getLedgerAccountAlias(), transfer.getUnits());
 
         // ---- The actual split: decrement seller, credit buyer ----
         int remaining = sellerHolding.getUnitsHeld() - transfer.getUnits();

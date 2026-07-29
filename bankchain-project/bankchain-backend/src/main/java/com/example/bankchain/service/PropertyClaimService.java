@@ -11,6 +11,7 @@ import com.example.bankchain.exception.ResourceNotFoundException;
 import com.example.bankchain.repository.AssetHoldingRepository;
 import com.example.bankchain.repository.PropertyClaimRepository;
 import com.example.bankchain.repository.UserRepository;
+import com.example.bankchain.service.ledger.LedgerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,14 @@ import java.util.List;
  * EQUALLY across all approved claimants, recomputed every time a new
  * one is approved - this is a simplified equal-split model (not a
  * percentage-of-choice model), matching "2 children -> 50/50".
+ *
+ * Ledger scope: the on-ledger contract's approve_death_claim() only
+ * supports a single full transfer from the deceased to one claimant - it
+ * has no way to claw back units from an already-credited claimant to
+ * re-split when a second claim is approved later. So the real ledger
+ * call only fires for the single-claimant case (see approve() below);
+ * multi-claimant equal-split redistribution stays Postgres-only, a known
+ * gap versus a fully on-chain model.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,7 +44,9 @@ public class PropertyClaimService {
     private final PropertyClaimRepository propertyClaimRepository;
     private final AssetHoldingRepository holdingRepository;
     private final AssetService assetService;
+    private final UserService userService;
     private final UserRepository userRepository;
+    private final LedgerService ledgerService;
     private final AuditService auditService;
     private final SmartContractClient smartContractClient;
     private final NotificationService notificationService;
@@ -95,6 +106,17 @@ public class PropertyClaimService {
         claim.setStatus("APPROVED");
         claim.setRmNote(null);
         propertyClaimRepository.save(claim);
+
+        List<PropertyClaim> approvedClaims = propertyClaimRepository.findByAssetIdAndStatus(claim.getAsset().getId(), "APPROVED");
+        if (approvedClaims.size() == 1) {
+            // Single claimant - the common case, and the only shape the
+            // on-ledger contract can express (see class docstring).
+            Asset asset = claim.getAsset();
+            User deceased = userService.ensureLedgerAccount(asset.getIssuer());
+            User claimantWithLedger = userService.ensureLedgerAccount(claim.getClaimant());
+            ledgerService.approveDeathClaim(asset.getLedgerTokenId(), deceased.getLedgerAccountAlias(),
+                    claimantWithLedger.getLedgerAccountAlias(), claim.getClaimantRelation());
+        }
 
         redistribute(claim.getAsset().getId());
 

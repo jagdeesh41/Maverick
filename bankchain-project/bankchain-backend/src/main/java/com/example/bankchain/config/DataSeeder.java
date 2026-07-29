@@ -2,6 +2,7 @@ package com.example.bankchain.config;
 
 import com.example.bankchain.entity.*;
 import com.example.bankchain.repository.*;
+import com.example.bankchain.service.UserService;
 import com.example.bankchain.service.ledger.LedgerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +28,7 @@ public class DataSeeder implements CommandLineRunner {
     private final PropertyClaimRepository propertyClaimRepository;
     private final LedgerService ledgerService;
     private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
 
     @Value("${app.seed.enabled:true}")
     private boolean seedEnabled;
@@ -182,8 +184,7 @@ public class DataSeeder implements CommandLineRunner {
 
     private Asset saveAsset(User issuer, String type, String value, int units, int ownershipPercent,
                              String policyTemplate, String nominee, String relationType, String status) {
-        String tokenId = ledgerService.mint(null, new BigDecimal(value), units);
-        return assetRepository.save(Asset.builder()
+        Asset asset = assetRepository.save(Asset.builder()
                 .issuer(issuer)
                 .assetType(type)
                 .assetValue(new BigDecimal(value))
@@ -194,9 +195,17 @@ public class DataSeeder implements CommandLineRunner {
                 .relationType(relationType)
                 .proofDocumentBase64(PLACEHOLDER_PROOF)
                 .status(status)
-                .ledgerTokenId(tokenId)
                 .evidenceHash("Qm" + UUID.randomUUID().toString().replace("-", "").substring(0, 8))
                 .createdAt(LocalDateTime.now())
                 .build());
+
+        // Seed data always has a proof photo attached and needs an ID before
+        // a contract can be deployed for it - issue() needs the row to exist
+        // first, unlike the real flow where confirmAsset() runs well after.
+        User issuerWithLedger = userService.ensureLedgerAccount(issuer);
+        String tokenId = ledgerService.issue(asset.getId(), type.toUpperCase(), ownershipPercent, units, true,
+                issuerWithLedger.getLedgerAccountAlias());
+        asset.setLedgerTokenId(tokenId);
+        return assetRepository.save(asset);
     }
 }

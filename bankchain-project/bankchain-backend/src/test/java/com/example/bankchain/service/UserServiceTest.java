@@ -6,6 +6,7 @@ import com.example.bankchain.entity.Role;
 import com.example.bankchain.entity.User;
 import com.example.bankchain.exception.BusinessRuleException;
 import com.example.bankchain.repository.UserRepository;
+import com.example.bankchain.service.ledger.LedgerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,12 +33,13 @@ class UserServiceTest {
     @Mock private AuditService auditService;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private SessionService sessionService;
+    @Mock private LedgerService ledgerService;
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, auditService, passwordEncoder, sessionService);
+        userService = new UserService(userRepository, auditService, passwordEncoder, sessionService, ledgerService);
     }
 
     @Test

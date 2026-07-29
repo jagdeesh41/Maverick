@@ -7,6 +7,7 @@ import com.example.bankchain.entity.User;
 import com.example.bankchain.exception.BusinessRuleException;
 import com.example.bankchain.exception.ResourceNotFoundException;
 import com.example.bankchain.repository.UserRepository;
+import com.example.bankchain.service.ledger.LedgerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class UserService {
     private final AuditService auditService;
     private final PasswordEncoder passwordEncoder;
     private final SessionService sessionService;
+    private final LedgerService ledgerService;
 
     /**
      * First login for a brand-new username provisions it with the password
@@ -62,5 +64,21 @@ public class UserService {
     public User getUserOrThrow(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+    }
+
+    /**
+     * Provisions this user a Universal Ledger account the first time they
+     * need one (issuing an asset, buying in a transfer, filing/being a
+     * claimant) - a Cloud KMS signing key + accounts create, see
+     * GculLedgerAdapter.provisionAccount. Idempotent: does nothing once
+     * User.ledgerAccountAlias is already set.
+     */
+    public User ensureLedgerAccount(User user) {
+        if (user.getLedgerAccountAlias() != null) {
+            return user;
+        }
+        String alias = ledgerService.provisionAccount("customer-" + user.getId());
+        user.setLedgerAccountAlias(alias);
+        return userRepository.save(user);
     }
 }

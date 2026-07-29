@@ -51,9 +51,12 @@ public class AssetService {
                 .evidenceHash("Qm" + UUID.randomUUID().toString().replace("-", "").substring(0, 8))
                 .build();
 
-        String tokenId = ledgerService.mint(null, request.getAssetValue(), request.getOwnershipUnits());
-        asset.setLedgerTokenId(tokenId);
-
+        // No ledger contract yet - a PENDING_CONFIRMATION/ON_HOLD asset may
+        // never become real, and deploying a contract for it would be a real
+        // on-ledger transaction for something that hasn't been approved yet.
+        // The contract gets created in confirmAsset() instead, once RM
+        // approval and the same eligibility rules the constructor itself
+        // enforces have both been satisfied.
         Asset saved = assetRepository.save(asset);
 
         holdingRepository.save(AssetHolding.builder()
@@ -82,6 +85,15 @@ public class AssetService {
             auditService.log("Asset issuance confirmation rejected", "Smart contract (Python)", "Blocked", decision.getReason());
             throw new BusinessRuleException(decision.getReason());
         }
+
+        // Deploy the real contract here - RM approval is the moment this
+        // asset becomes real. The constructor re-checks the same rule
+        // (Rule 7) on-ledger; the pre-check above just avoids paying for a
+        // transaction we already know would fail.
+        User issuer = userService.ensureLedgerAccount(asset.getIssuer());
+        String tokenId = ledgerService.issue(asset.getId(), asset.getAssetType(), asset.getOwnershipPercent(),
+                asset.getOwnershipUnits(), hasProof, issuer.getLedgerAccountAlias());
+        asset.setLedgerTokenId(tokenId);
 
         asset.setStatus("ACTIVE");
         asset.setRmNote(null);
@@ -165,6 +177,19 @@ public class AssetService {
         asset.setStatus("FROZEN");
         assetRepository.save(asset);
         ledgerService.freeze(asset.getLedgerTokenId());
+    }
+
+    /**
+     * Rule 3: an inheritance dispute always auto-freezes, regardless of
+     * asset state or who raised it - calls the contract's permissionless
+     * raise_dispute() rather than the owner-only freeze() used by
+     * freezeAsset(), matching the on-ledger method the rule actually maps to.
+     */
+    public void raiseDisputeAndFreeze(Long assetId) {
+        Asset asset = getAssetOrThrow(assetId);
+        asset.setStatus("FROZEN");
+        assetRepository.save(asset);
+        ledgerService.raiseDispute(asset.getLedgerTokenId());
     }
 
     public void unfreezeAsset(Long assetId) {
