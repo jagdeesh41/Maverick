@@ -9,6 +9,7 @@ import com.example.bankchain.exception.ResourceNotFoundException;
 import com.example.bankchain.repository.UserRepository;
 import com.example.bankchain.service.ledger.LedgerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -33,16 +34,29 @@ public class UserService {
         Role role = Role.valueOf(request.getRole().toUpperCase());
 
         User user = userRepository.findByUsername(request.getUsername()).orElse(null);
+        boolean newlyProvisioned = false;
 
         if (user == null) {
-            user = userRepository.save(User.builder()
-                    .username(request.getUsername())
-                    .fullName(request.getUsername())
-                    .role(role)
-                    .password(passwordEncoder.encode(request.getPassword()))
-                    .enabled(true)
-                    .build());
-        } else if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            try {
+                user = userRepository.save(User.builder()
+                        .username(request.getUsername())
+                        .fullName(request.getUsername())
+                        .role(role)
+                        .password(passwordEncoder.encode(request.getPassword()))
+                        .enabled(true)
+                        .build());
+                newlyProvisioned = true;
+            } catch (DataIntegrityViolationException raceLoss) {
+                // Someone else (e.g. DataSeeder on a cold start, or a concurrent
+                // request for the same brand-new username) inserted this row
+                // between our findByUsername() and save() - re-fetch and fall
+                // through to the normal password check instead of failing.
+                user = userRepository.findByUsername(request.getUsername())
+                        .orElseThrow(() -> raceLoss);
+            }
+        }
+
+        if (!newlyProvisioned && !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             auditService.log("Customer login", "IAM", "Blocked", "Invalid password for " + request.getUsername());
             throw new BusinessRuleException("Invalid username or password.");
         }
