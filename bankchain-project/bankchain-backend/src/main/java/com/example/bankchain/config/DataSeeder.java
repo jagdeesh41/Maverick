@@ -8,6 +8,7 @@ import com.example.bankchain.service.storage.GcsFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -95,12 +96,12 @@ public class DataSeeder implements CommandLineRunner {
 
         // ---- Users (6) ----
         String seededPassword = passwordEncoder.encode(DEMO_PASSWORD);
-        User priyal = userRepository.save(User.builder().username("priyal").fullName("Priyal Agarwal").role(Role.CUSTOMER).password(seededPassword).enabled(true).build());
-        User rahul = userRepository.save(User.builder().username("rahul").fullName("Rahul Sharma").role(Role.CUSTOMER).password(seededPassword).enabled(true).build());
-        User ananya = userRepository.save(User.builder().username("ananya").fullName("Ananya Iyer").role(Role.CUSTOMER).password(seededPassword).enabled(true).build());
-        User rmAdmin = userRepository.save(User.builder().username("rm.admin").fullName("RM Admin").role(Role.RM).password(seededPassword).enabled(true).build());
-        userRepository.save(User.builder().username("legal.exec").fullName("Legal Executor").role(Role.LEGAL).password(seededPassword).enabled(true).build());
-        userRepository.save(User.builder().username("compliance.audit").fullName("Compliance Auditor").role(Role.COMPLIANCE).password(seededPassword).enabled(true).build());
+        User priyal = seedUser("priyal", "Priyal Agarwal", Role.CUSTOMER, seededPassword);
+        User rahul = seedUser("rahul", "Rahul Sharma", Role.CUSTOMER, seededPassword);
+        User ananya = seedUser("ananya", "Ananya Iyer", Role.CUSTOMER, seededPassword);
+        User rmAdmin = seedUser("rm.admin", "RM Admin", Role.RM, seededPassword);
+        seedUser("legal.exec", "Legal Executor", Role.LEGAL, seededPassword);
+        seedUser("compliance.audit", "Compliance Auditor", Role.COMPLIANCE, seededPassword);
 
         // ---- Assets + holdings (5) ----
         // Fixed Deposit / Bond / Equity / Commodity = fully owned (100%) once issued.
@@ -187,6 +188,22 @@ public class DataSeeder implements CommandLineRunner {
                 .asset(a5).claimant(ananya).claimantRelation("SIBLING")
                 .certificateProofKey(PLACEHOLDER_KEY).status("SUBMITTED")
                 .createdAt(LocalDateTime.now()).build());
+    }
+
+    /**
+     * A real login request can beat this seeder to creating the same
+     * username on a cold start (Cloud Run starts routing traffic once the
+     * port is open, before CommandLineRunners finish) - re-fetch instead of
+     * letting the whole startup crash on a unique-constraint violation.
+     */
+    private User seedUser(String username, String fullName, Role role, String encodedPassword) {
+        try {
+            return userRepository.save(User.builder()
+                    .username(username).fullName(fullName).role(role)
+                    .password(encodedPassword).enabled(true).build());
+        } catch (DataIntegrityViolationException raceLoss) {
+            return userRepository.findByUsername(username).orElseThrow(() -> raceLoss);
+        }
     }
 
     private Asset saveAsset(User issuer, String type, String value, int units, int ownershipPercent,
