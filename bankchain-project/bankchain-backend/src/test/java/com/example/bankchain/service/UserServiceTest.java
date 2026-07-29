@@ -66,12 +66,12 @@ class UserServiceTest {
         LoginRequest request = new LoginRequest();
         request.setUsername("priyal");
         request.setRole("CUSTOMER");
-        request.setPassword("Passw0rd1");
+        request.setPassword("12345");
 
         User existing = User.builder().id(1L).username("priyal").fullName("Priyal Agarwal")
                 .role(Role.CUSTOMER).password("hashed-existing").enabled(true).build();
         when(userRepository.findByUsername("priyal")).thenReturn(Optional.of(existing));
-        when(passwordEncoder.matches("Passw0rd1", "hashed-existing")).thenReturn(true);
+        when(passwordEncoder.matches("12345", "hashed-existing")).thenReturn(true);
         when(sessionService.createSession(1L, "priyal", Role.CUSTOMER)).thenReturn("token-456");
 
         LoginResponse response = userService.login(request);

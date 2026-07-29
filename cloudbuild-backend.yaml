@@ -1,4 +1,12 @@
 steps:
+  # Run backend tests first - if any test fails, the build stops here and
+  # nothing gets built/pushed/deployed. Previously this pipeline had no
+  # test gate at all: a failing test would still ship.
+  - name: 'maven:3.9-eclipse-temurin-17'
+    id: 'backend-tests'
+    dir: 'bankchain-project/bankchain-backend'
+    args: ['mvn', '-B', 'test']
+
   # Build backend image
   - name: 'gcr.io/cloud-builders/docker'
     id: 'docker-build-backend'

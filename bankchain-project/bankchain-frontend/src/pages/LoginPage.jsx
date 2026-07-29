@@ -106,7 +106,7 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 className="lb-input"
-                placeholder="Demo password: Passw0rd1"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -143,7 +143,7 @@ export default function LoginPage() {
             <strong>Prototype demo</strong> — MFA/KYC are mocked, but the
             password is real and checked against a stored (BCrypt-hashed)
             value. Seeded demo accounts (priyal, rahul, ananya, rm.admin,
-            legal.exec, compliance.audit) use password <code>Passw0rd1</code>.
+            legal.exec, compliance.audit) use password <code>12345</code>.
             Typing a brand-new User ID provisions it with whatever password
             you enter — every login after that must match it.
           </div>

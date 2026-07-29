@@ -35,7 +35,7 @@ public class DataSeeder implements CommandLineRunner {
     // legal.exec, compliance.audit) - shown on the login screen. Any new
     // username typed at login provisions itself with whatever password is
     // entered, same as a real first-time signup.
-    public static final String DEMO_PASSWORD = "Passw0rd1";
+    public static final String DEMO_PASSWORD = "12345";
 
     // A real, valid placeholder PNG (base64) - so seed data actually renders
     // as an image on RM screens, same as a real uploaded photo would. Real
