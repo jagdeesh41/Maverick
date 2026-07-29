@@ -17,7 +17,7 @@ export default function Inheritance() {
   const [assetId, setAssetId] = useState(searchParams.get('assetId') || '');
   const [triggerCondition, setTriggerCondition] = useState('AFTER_DEATH');
   const [nominees, setNominees] = useState([blankNominee()]);
-  const [proofDocumentBase64, setProofDocumentBase64] = useState('');
+  const [proofDocumentKey, setProofDocumentKey] = useState('');
   const [disputeAction, setDisputeAction] = useState('Temporary freeze');
   const [policy, setPolicy] = useState(null);
   const [lookedUp, setLookedUp] = useState(false); // have we actually tried a lookup yet?
@@ -71,13 +71,13 @@ export default function Inheritance() {
         assetId: Number(assetId),
         triggerCondition,
         nominees: nominees.filter((n) => n.name).map((n) => ({ ...n, allocationPercent: Number(n.allocationPercent) })),
-        proofDocumentBase64,
+        proofDocumentKey,
         disputeAction,
       });
       setPolicy(saved);
       window.alert('Inheritance policy saved successfully.');
       setNominees([blankNominee()]);
-      setProofDocumentBase64('');
+      setProofDocumentKey('');
       setTriggerCondition('AFTER_DEATH');
     } catch (err) {
       setError(err.message);
@@ -162,7 +162,7 @@ export default function Inheritance() {
           )}
         </div>
 
-        <FileUpload label="Supporting document (optional)" value={proofDocumentBase64} onChange={setProofDocumentBase64} />
+        <FileUpload label="Supporting document (optional)" category="inheritance-proof" value={proofDocumentKey} onChange={setProofDocumentKey} />
 
         {error && <div className="lb-error-banner">{error}</div>}
         <button className="lb-btn" disabled={busy || !assetId || overAllocated}>{busy ? 'Saving…' : 'Save policy'}</button>

@@ -9,7 +9,7 @@ export default function Recovery() {
   const { user } = useAuth();
   const [form, setForm] = useState({
     recoveryReason: '', verificationMethod: 'Bank KYC + MFA',
-    phoneNumber: '', email: '', proofDocumentBase64: '',
+    phoneNumber: '', email: '', proofDocumentKey: '',
   });
   const [requests, setRequests] = useState([]);
   const [error, setError] = useState('');
@@ -30,7 +30,7 @@ export default function Recovery() {
     setBusy(true);
     try {
       await submitRecovery({ userId: user.userId, ...form });
-      setForm({ recoveryReason: '', verificationMethod: 'Bank KYC + MFA', phoneNumber: '', email: '', proofDocumentBase64: '' });
+      setForm({ recoveryReason: '', verificationMethod: 'Bank KYC + MFA', phoneNumber: '', email: '', proofDocumentKey: '' });
       load();
     } catch (err) {
       setError(err.message);
@@ -87,8 +87,9 @@ export default function Recovery() {
         </div>
         <FileUpload
           label="Identity proof (photo/document)"
-          value={form.proofDocumentBase64}
-          onChange={(v) => update('proofDocumentBase64', v)}
+          category="recovery-proof"
+          value={form.proofDocumentKey}
+          onChange={(v) => update('proofDocumentKey', v)}
         />
         {error && <div className="lb-error-banner">{error}</div>}
         <button className="lb-btn" disabled={busy}>{busy ? 'Submitting…' : 'Submit request'}</button>

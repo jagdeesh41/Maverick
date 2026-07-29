@@ -13,6 +13,7 @@ import com.example.bankchain.exception.ResourceNotFoundException;
 import com.example.bankchain.repository.AssetHoldingRepository;
 import com.example.bankchain.repository.AssetRepository;
 import com.example.bankchain.service.ledger.LedgerService;
+import com.example.bankchain.service.storage.GcsFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +34,7 @@ public class AssetService {
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final SmartContractClient smartContractClient;
+    private final GcsFileService gcsFileService;
 
     public AssetResponse issueAsset(IssueAssetRequest request) {
         User issuer = userService.getUserOrThrow(request.getOwnerId());
@@ -46,14 +48,17 @@ public class AssetService {
                 .policyTemplate(request.getPolicyTemplate())
                 .nominee(request.getNominee())
                 .relationType(request.getRelationType())
-                .proofDocumentBase64(request.getProofDocumentBase64())
+                .proofDocumentKey(request.getProofDocumentKey())
                 .status("PENDING_CONFIRMATION")
                 .evidenceHash("Qm" + UUID.randomUUID().toString().replace("-", "").substring(0, 8))
                 .build();
 
-        String tokenId = ledgerService.mint(null, request.getAssetValue(), request.getOwnershipUnits());
-        asset.setLedgerTokenId(tokenId);
-
+        // No ledger contract yet - a PENDING_CONFIRMATION/ON_HOLD asset may
+        // never become real, and deploying a contract for it would be a real
+        // on-ledger transaction for something that hasn't been approved yet.
+        // The contract gets created in confirmAsset() instead, once RM
+        // approval and the same eligibility rules the constructor itself
+        // enforces have both been satisfied.
         Asset saved = assetRepository.save(asset);
 
         holdingRepository.save(AssetHolding.builder()
@@ -76,12 +81,21 @@ public class AssetService {
             throw new BusinessRuleException("Asset #" + assetId + " is not awaiting confirmation (status: " + asset.getStatus() + ").");
         }
 
-        boolean hasProof = asset.getProofDocumentBase64() != null && !asset.getProofDocumentBase64().isBlank();
+        boolean hasProof = asset.getProofDocumentKey() != null && !asset.getProofDocumentKey().isBlank();
         RuleCheckResponse decision = smartContractClient.evaluateIssuance(asset.getAssetType(), asset.getOwnershipPercent(), hasProof);
         if (!decision.isAllowed()) {
             auditService.log("Asset issuance confirmation rejected", "Smart contract (Python)", "Blocked", decision.getReason());
             throw new BusinessRuleException(decision.getReason());
         }
+
+        // Deploy the real contract here - RM approval is the moment this
+        // asset becomes real. The constructor re-checks the same rule
+        // (Rule 7) on-ledger; the pre-check above just avoids paying for a
+        // transaction we already know would fail.
+        User issuer = userService.ensureLedgerAccount(asset.getIssuer());
+        String tokenId = ledgerService.issue(asset.getId(), asset.getAssetType(), asset.getOwnershipPercent(),
+                asset.getOwnershipUnits(), hasProof, issuer.getLedgerAccountAlias());
+        asset.setLedgerTokenId(tokenId);
 
         asset.setStatus("ACTIVE");
         asset.setRmNote(null);
@@ -112,13 +126,13 @@ public class AssetService {
     }
 
     /** Customer responds to a hold by resubmitting proof - goes back into the queue as PENDING_CONFIRMATION. */
-    public AssetResponse resubmitProof(Long assetId, String proofDocumentBase64) {
+    public AssetResponse resubmitProof(Long assetId, String proofDocumentKey) {
         Asset asset = getAssetOrThrow(assetId);
         if (!"ON_HOLD".equals(asset.getStatus())) {
             throw new BusinessRuleException("Asset #" + assetId + " is not on hold.");
         }
-        if (proofDocumentBase64 != null && !proofDocumentBase64.isBlank()) {
-            asset.setProofDocumentBase64(proofDocumentBase64);
+        if (proofDocumentKey != null && !proofDocumentKey.isBlank()) {
+            asset.setProofDocumentKey(proofDocumentKey);
         }
         asset.setStatus("PENDING_CONFIRMATION");
         Asset saved = assetRepository.save(asset);
@@ -167,6 +181,19 @@ public class AssetService {
         ledgerService.freeze(asset.getLedgerTokenId());
     }
 
+    /**
+     * Rule 3: an inheritance dispute always auto-freezes, regardless of
+     * asset state or who raised it - calls the contract's permissionless
+     * raise_dispute() rather than the owner-only freeze() used by
+     * freezeAsset(), matching the on-ledger method the rule actually maps to.
+     */
+    public void raiseDisputeAndFreeze(Long assetId) {
+        Asset asset = getAssetOrThrow(assetId);
+        asset.setStatus("FROZEN");
+        assetRepository.save(asset);
+        ledgerService.raiseDispute(asset.getLedgerTokenId());
+    }
+
     public void unfreezeAsset(Long assetId) {
         Asset asset = getAssetOrThrow(assetId);
         asset.setStatus("ACTIVE");
@@ -193,7 +220,7 @@ public class AssetService {
                 .policyTemplate(asset.getPolicyTemplate())
                 .nominee(asset.getNominee())
                 .relationType(asset.getRelationType())
-                .proofDocumentBase64(asset.getProofDocumentBase64())
+                .proofDocumentUrl(gcsFileService.signedUrl(asset.getProofDocumentKey()))
                 .status(asset.getStatus())
                 .rmNote(asset.getRmNote())
                 .priority(asset.isPriority())

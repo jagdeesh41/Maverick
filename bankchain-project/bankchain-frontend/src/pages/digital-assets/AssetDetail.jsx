@@ -17,7 +17,7 @@ export default function AssetDetail() {
   const [busy, setBusy] = useState(false);
   const [holdNote, setHoldNote] = useState('');
   const [showHoldForm, setShowHoldForm] = useState(false);
-  const [resubmitProof, setResubmitProof] = useState('');
+  const [resubmitProofKey, setResubmitProofKey] = useState('');
 
   function load() {
     getAssetDetails(assetId).then(setAsset).catch((e) => setError(e.message));
@@ -76,7 +76,7 @@ export default function AssetDetail() {
       </div>
 
       <div className="lb-card" style={{ marginTop: 16 }}>
-        <ProofViewer label="Asset proof on file" value={asset.proofDocumentBase64} />
+        <ProofViewer label="Asset proof on file" value={asset.proofDocumentUrl} />
       </div>
 
       <h3 style={{ marginTop: 24 }}>Cap table — who holds this asset</h3>
@@ -100,11 +100,11 @@ export default function AssetDetail() {
             The RM has asked for more documentation (see note above). Upload a new
             document and resubmit — it'll go straight back into their queue.
           </p>
-          <FileUpload label="New proof document" value={resubmitProof} onChange={setResubmitProof} />
+          <FileUpload label="New proof document" category="asset-proof" value={resubmitProofKey} onChange={setResubmitProofKey} />
           <button
             className="lb-btn" style={{ marginTop: 12 }}
-            disabled={busy || !resubmitProof}
-            onClick={() => runAction(() => resubmitAssetProof(assetId, resubmitProof))}
+            disabled={busy || !resubmitProofKey}
+            onClick={() => runAction(() => resubmitAssetProof(assetId, resubmitProofKey))}
           >
             {busy ? 'Resubmitting…' : 'Resubmit for confirmation'}
           </button>

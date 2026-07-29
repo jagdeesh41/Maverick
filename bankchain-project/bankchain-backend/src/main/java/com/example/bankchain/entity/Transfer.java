@@ -33,8 +33,12 @@ public class Transfer {
 
     private String settlementRail;
 
-    @Lob
-    private String transfereeProofBase64; // ID proof of the person receiving, for later verification
+    // GCS object key for the transferee's ID proof - never the file itself.
+    private String transfereeProofKey;
+
+    // Signed read URL, populated at read time from transfereeProofKey - never persisted.
+    @Transient
+    private String transfereeProofUrl;
 
     private String buyerProofType;  // ACCOUNT_NUMBER or ID_NUMBER
     private String buyerProofValue;

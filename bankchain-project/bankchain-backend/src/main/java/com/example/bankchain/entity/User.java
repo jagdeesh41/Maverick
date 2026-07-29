@@ -32,4 +32,9 @@ public class User {
     // username (auto-provision) and checked on every login after that.
     @Column(nullable = false)
     private String password;
+
+    // Universal Ledger account alias for this user (e.g. "customer-42"), provisioned
+    // on demand (Cloud KMS key + accounts create) the first time this user needs to
+    // hold balance/kyc_approved on a contract. Null until then - see UserService.ensureLedgerAccount.
+    private String ledgerAccountAlias;
 }

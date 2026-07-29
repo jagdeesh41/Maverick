@@ -10,7 +10,7 @@
  * ----------------------------------------------------------------------
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 // Bearer token issued by POST /auth/login, kept in module memory. AuthContext
 // sets this on login/page-load and clears it on logout - see setAuthToken/clearAuthToken.
@@ -53,6 +53,39 @@ async function request(path, options = {}) {
   }
 
   return body?.data;
+}
+
+// Every FileUpload.jsx picker calls this the moment a file is chosen - the
+// returned key is what the actual form later submits, never the file bytes
+// again. Deliberately bypasses request(): a multipart body needs the browser
+// to set its own Content-Type boundary, not the fixed 'application/json' header.
+export async function uploadProofFile(file, category) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('category', category);
+
+  const headers = {};
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}/customer/files/upload`, { method: 'POST', headers, body: formData });
+  } catch (networkErr) {
+    throw new Error(`Could not reach the backend at ${BASE_URL}. Is bankchain-backend running? (${networkErr.message})`);
+  }
+
+  let body;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+
+  if (!res.ok || (body && body.success === false)) {
+    throw new Error(body?.message || `Upload failed (HTTP ${res.status})`);
+  }
+
+  return body?.data?.key;
 }
 
 /* ============================== AUTH ============================== */
@@ -153,10 +186,10 @@ export function holdAsset(id, note) {
   return request(`/rm/assets/${id}/hold`, { method: 'POST', body: JSON.stringify({ note }) });
 }
 // Customer resubmits proof after being placed on hold
-export function resubmitAssetProof(assetId, proofDocumentBase64) {
+export function resubmitAssetProof(assetId, proofDocumentKey) {
   return request(`/customer/assets/${assetId}/resubmit`, {
     method: 'POST',
-    body: JSON.stringify({ proofDocumentBase64 }),
+    body: JSON.stringify({ proofDocumentKey }),
   });
 }
 

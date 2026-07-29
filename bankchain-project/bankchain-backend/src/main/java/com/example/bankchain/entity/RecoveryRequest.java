@@ -30,8 +30,12 @@ public class RecoveryRequest {
     @Column(nullable = false)
     private String email;
 
-    @Lob
-    private String proofDocumentBase64; // ID/KYC-style proof supporting the recovery request
+    // GCS object key for the ID/KYC-style proof supporting this request - never the file itself.
+    private String proofDocumentKey;
+
+    // Signed read URL, populated at read time from proofDocumentKey - never persisted.
+    @Transient
+    private String proofDocumentUrl;
 
     @Column(nullable = false)
     private String status; // REQUESTED, IDENTITY_PROOFING, GOVERNANCE_APPROVAL, RESET

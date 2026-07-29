@@ -16,7 +16,7 @@ export default function IssueAsset() {
     nominee: '',
     relationType: 'FAMILY',
     ownershipPercent: 100,
-    proofDocumentBase64: '',
+    proofDocumentKey: '',
   });
 
   // Only Real Estate is ever partially owned in this demo (e.g. mortgage still
@@ -50,7 +50,7 @@ export default function IssueAsset() {
         policyTemplate: form.policyTemplate,
         nominee: form.nominee,
         relationType: form.relationType,
-        proofDocumentBase64: form.proofDocumentBase64,
+        proofDocumentKey: form.proofDocumentKey,
       });
       setSubmitted(asset);
     } catch (err) {
@@ -163,8 +163,9 @@ export default function IssueAsset() {
 
         <FileUpload
           label="Asset proof (photo/document)"
-          value={form.proofDocumentBase64}
-          onChange={(v) => update('proofDocumentBase64', v)}
+          category="asset-proof"
+          value={form.proofDocumentKey}
+          onChange={(v) => update('proofDocumentKey', v)}
         />
 
         {error && <div className="lb-error-banner">{error}</div>}

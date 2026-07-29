@@ -17,6 +17,6 @@ public class InheritancePolicyRequest {
     // As many nominees as needed - validated server-side to sum to <= 100%
     private List<NomineeDto> nominees;
 
-    private String proofDocumentBase64;
+    private String proofDocumentKey;
     private String disputeAction;
 }

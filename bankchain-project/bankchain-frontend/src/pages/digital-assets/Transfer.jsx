@@ -20,7 +20,7 @@ export default function Transfer() {
   const [buyerCustomerId, setBuyerCustomerId] = useState('');
   const [units, setUnits] = useState('');
   const [settlementRail, setSettlementRail] = useState('');
-  const [transfereeProof, setTransfereeProof] = useState('');
+  const [transfereeProofKey, setTransfereeProofKey] = useState('');
   const [buyerProofType, setBuyerProofType] = useState('ACCOUNT_NUMBER');
   const [buyerProofValue, setBuyerProofValue] = useState('');
   const [consentGiven, setConsentGiven] = useState(false);
@@ -46,7 +46,7 @@ export default function Transfer() {
         buyerCustomerId,
         units: unitsNum,
         settlementRail: settlementRail || undefined,
-        transfereeProofBase64: transfereeProof,
+        transfereeProofKey,
         buyerProofType,
         buyerProofValue,
         consentGiven,
@@ -135,8 +135,9 @@ export default function Transfer() {
 
         <FileUpload
           label="Photo/document of the buyer's ID (kept for later verification)"
-          value={transfereeProof}
-          onChange={setTransfereeProof}
+          category="transfer-proof"
+          value={transfereeProofKey}
+          onChange={setTransfereeProofKey}
         />
 
         <div>

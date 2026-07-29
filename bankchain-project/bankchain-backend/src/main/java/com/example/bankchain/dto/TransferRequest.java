@@ -20,8 +20,8 @@ public class TransferRequest {
 
     private String settlementRail;
 
-    // ID proof of the person receiving, kept for later verification
-    private String transfereeProofBase64;
+    // GCS object key for the ID proof of the person receiving, kept for later verification
+    private String transfereeProofKey;
 
     private String buyerProofType;  // ACCOUNT_NUMBER or ID_NUMBER
     private String buyerProofValue;

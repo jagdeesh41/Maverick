@@ -15,6 +15,6 @@ public class KycQueueItemResponse {
     private String fullName;
     private String documentType;
     private String documentNumber;
-    private String proofPhotoBase64;
+    private String proofPhotoUrl;
     private String status;
 }

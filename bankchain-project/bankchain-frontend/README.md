@@ -23,7 +23,7 @@ already exist in `bankchain-backend` as you uploaded it.
 ```bash
 cd bankchain-frontend
 npm install
-cp .env.example .env      # only edit this if your backend isn't on localhost:8081
+cp .env.example .env      # only edit this if your backend isn't on localhost:8080
 npm run dev
 ```
 

@@ -2,15 +2,19 @@ package com.example.bankchain.config;
 
 import com.example.bankchain.entity.*;
 import com.example.bankchain.repository.*;
+import com.example.bankchain.service.UserService;
 import com.example.bankchain.service.ledger.LedgerService;
+import com.example.bankchain.service.storage.GcsFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.UUID;
 
 @Component
@@ -27,6 +31,8 @@ public class DataSeeder implements CommandLineRunner {
     private final PropertyClaimRepository propertyClaimRepository;
     private final LedgerService ledgerService;
     private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
+    private final GcsFileService gcsFileService;
 
     @Value("${app.seed.enabled:true}")
     private boolean seedEnabled;
@@ -74,9 +80,10 @@ public class DataSeeder implements CommandLineRunner {
             "gBgRAmJECIgRISBGhIAYEQJiRAiIESEgRoSAGBECYkQIiBEhIEaEgBgRAmJECIgRISBGhIAYEQJiRAiIESEgRoSAGBECYmGt3C59" +
             "6dxvdR3ATYsrISBGhICYo6qmWr0G4KbGlRAQI0JAjAgBMSIExIgQECNCQIwIATEiBMT+ByLr+klwykH0AAAAAElFTkSuQmCC";
 
-    private String proof(String label) {
-        return PLACEHOLDER_PROOF;
-    }
+    // Fixed GCS key every seeded row shares - uploaded once below, overwritten
+    // harmlessly on every restart (same bytes), so seed data shows a real
+    // working signed-URL image instead of a base64 blob or a dead key.
+    private static final String PLACEHOLDER_KEY = "seed/placeholder.png";
 
     @Override
     public void run(String... args) {
@@ -84,14 +91,17 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
 
+        String placeholderBase64Body = PLACEHOLDER_PROOF.substring(PLACEHOLDER_PROOF.indexOf(',') + 1);
+        gcsFileService.uploadBytes(Base64.getDecoder().decode(placeholderBase64Body), "image/png", PLACEHOLDER_KEY);
+
         // ---- Users (6) ----
         String seededPassword = passwordEncoder.encode(DEMO_PASSWORD);
-        User priyal = userRepository.save(User.builder().username("priyal").fullName("Priyal Agarwal").role(Role.CUSTOMER).password(seededPassword).enabled(true).build());
-        User rahul = userRepository.save(User.builder().username("rahul").fullName("Rahul Sharma").role(Role.CUSTOMER).password(seededPassword).enabled(true).build());
-        User ananya = userRepository.save(User.builder().username("ananya").fullName("Ananya Iyer").role(Role.CUSTOMER).password(seededPassword).enabled(true).build());
-        User rmAdmin = userRepository.save(User.builder().username("rm.admin").fullName("RM Admin").role(Role.RM).password(seededPassword).enabled(true).build());
-        userRepository.save(User.builder().username("legal.exec").fullName("Legal Executor").role(Role.LEGAL).password(seededPassword).enabled(true).build());
-        userRepository.save(User.builder().username("compliance.audit").fullName("Compliance Auditor").role(Role.COMPLIANCE).password(seededPassword).enabled(true).build());
+        User priyal = seedUser("priyal", "Priyal Agarwal", Role.CUSTOMER, seededPassword);
+        User rahul = seedUser("rahul", "Rahul Sharma", Role.CUSTOMER, seededPassword);
+        User ananya = seedUser("ananya", "Ananya Iyer", Role.CUSTOMER, seededPassword);
+        User rmAdmin = seedUser("rm.admin", "RM Admin", Role.RM, seededPassword);
+        seedUser("legal.exec", "Legal Executor", Role.LEGAL, seededPassword);
+        seedUser("compliance.audit", "Compliance Auditor", Role.COMPLIANCE, seededPassword);
 
         // ---- Assets + holdings (5) ----
         // Fixed Deposit / Bond / Equity / Commodity = fully owned (100%) once issued.
@@ -121,41 +131,41 @@ public class DataSeeder implements CommandLineRunner {
         // ---- Transfers (3) - with buyer proof + consent ----
         transferRepository.save(Transfer.builder().asset(a1).seller(priyal).buyerCustomerId("rahul")
                 .units(100).settlementRail("Tokenised deposit rail")
-                .transfereeProofBase64(PLACEHOLDER_PROOF)
+                .transfereeProofKey(PLACEHOLDER_KEY)
                 .buyerProofType("ACCOUNT_NUMBER").buyerProofValue("400123456789").consentGiven(true)
                 .status("LOCKED").build());
 
         transferRepository.save(Transfer.builder().asset(a2).seller(priyal).buyerCustomerId("ananya")
                 .units(50).settlementRail("Tokenised deposit rail")
-                .transfereeProofBase64(PLACEHOLDER_PROOF)
+                .transfereeProofKey(PLACEHOLDER_KEY)
                 .buyerProofType("ID_NUMBER").buyerProofValue("ID998877665").consentGiven(true)
                 .status("ON_HOLD").rmNote("Please confirm buyer's relationship to the seller.").build());
 
         transferRepository.save(Transfer.builder().asset(a3).seller(rahul).buyerCustomerId("priyal")
                 .units(50).settlementRail("Tokenised deposit rail")
-                .transfereeProofBase64(PLACEHOLDER_PROOF)
+                .transfereeProofKey(PLACEHOLDER_KEY)
                 .buyerProofType("ACCOUNT_NUMBER").buyerProofValue("400111222333").consentGiven(true)
                 .status("SETTLED").build());
 
         // ---- KYC (3) ----
         kycRepository.save(Kyc.builder().user(priyal).documentType("Passport").documentNumber("P1234567")
-                .proofPhotoBase64(PLACEHOLDER_PROOF).status("APPROVED").build());
+                .proofPhotoKey(PLACEHOLDER_KEY).status("APPROVED").build());
         kycRepository.save(Kyc.builder().user(rahul).documentType("Driver's License").documentNumber("DL9988776")
-                .proofPhotoBase64(PLACEHOLDER_PROOF).status("PENDING").build());
+                .proofPhotoKey(PLACEHOLDER_KEY).status("PENDING").build());
         kycRepository.save(Kyc.builder().user(ananya).documentType("National ID").documentNumber("NID5544332")
-                .proofPhotoBase64(PLACEHOLDER_PROOF).status("PENDING").build());
+                .proofPhotoKey(PLACEHOLDER_KEY).status("PENDING").build());
 
         // ---- Recovery requests (2) ----
         recoveryRequestRepository.save(RecoveryRequest.builder().user(rahul)
                 .recoveryReason("Lost device").verificationMethod("Bank KYC + MFA")
                 .phoneNumber("+91-9800011122").email("rahul.sharma@example.com")
-                .proofDocumentBase64(PLACEHOLDER_PROOF).status("IDENTITY_PROOFING")
+                .proofDocumentKey(PLACEHOLDER_KEY).status("IDENTITY_PROOFING")
                 .createdAt(LocalDateTime.now()).build());
 
         recoveryRequestRepository.save(RecoveryRequest.builder().user(ananya)
                 .recoveryReason("Changed phone number").verificationMethod("Bank KYC + MFA")
                 .phoneNumber("+91-9811122233").email("ananya.iyer@example.com")
-                .proofDocumentBase64(PLACEHOLDER_PROOF).status("REQUESTED")
+                .proofDocumentKey(PLACEHOLDER_KEY).status("REQUESTED")
                 .createdAt(LocalDateTime.now()).build());
 
         // ---- Inheritance policy (1) - dynamic nominee list ----
@@ -163,7 +173,7 @@ public class DataSeeder implements CommandLineRunner {
                 .asset(a1)
                 .triggerCondition("AFTER_DEATH")
                 .selfRetainedPercent(0)
-                .proofDocumentBase64(PLACEHOLDER_PROOF)
+                .proofDocumentKey(PLACEHOLDER_KEY)
                 .disputeAction("Temporary freeze")
                 .status("ACTIVE")
                 .build();
@@ -176,14 +186,29 @@ public class DataSeeder implements CommandLineRunner {
         // ---- Property claim (1) ----
         propertyClaimRepository.save(PropertyClaim.builder()
                 .asset(a5).claimant(ananya).claimantRelation("SIBLING")
-                .certificateProofBase64(PLACEHOLDER_PROOF).status("SUBMITTED")
+                .certificateProofKey(PLACEHOLDER_KEY).status("SUBMITTED")
                 .createdAt(LocalDateTime.now()).build());
+    }
+
+    /**
+     * A real login request can beat this seeder to creating the same
+     * username on a cold start (Cloud Run starts routing traffic once the
+     * port is open, before CommandLineRunners finish) - re-fetch instead of
+     * letting the whole startup crash on a unique-constraint violation.
+     */
+    private User seedUser(String username, String fullName, Role role, String encodedPassword) {
+        try {
+            return userRepository.save(User.builder()
+                    .username(username).fullName(fullName).role(role)
+                    .password(encodedPassword).enabled(true).build());
+        } catch (DataIntegrityViolationException raceLoss) {
+            return userRepository.findByUsername(username).orElseThrow(() -> raceLoss);
+        }
     }
 
     private Asset saveAsset(User issuer, String type, String value, int units, int ownershipPercent,
                              String policyTemplate, String nominee, String relationType, String status) {
-        String tokenId = ledgerService.mint(null, new BigDecimal(value), units);
-        return assetRepository.save(Asset.builder()
+        Asset asset = assetRepository.save(Asset.builder()
                 .issuer(issuer)
                 .assetType(type)
                 .assetValue(new BigDecimal(value))
@@ -192,11 +217,19 @@ public class DataSeeder implements CommandLineRunner {
                 .policyTemplate(policyTemplate)
                 .nominee(nominee)
                 .relationType(relationType)
-                .proofDocumentBase64(PLACEHOLDER_PROOF)
+                .proofDocumentKey(PLACEHOLDER_KEY)
                 .status(status)
-                .ledgerTokenId(tokenId)
                 .evidenceHash("Qm" + UUID.randomUUID().toString().replace("-", "").substring(0, 8))
                 .createdAt(LocalDateTime.now())
                 .build());
+
+        // Seed data always has a proof photo attached and needs an ID before
+        // a contract can be deployed for it - issue() needs the row to exist
+        // first, unlike the real flow where confirmAsset() runs well after.
+        User issuerWithLedger = userService.ensureLedgerAccount(issuer);
+        String tokenId = ledgerService.issue(asset.getId(), type.toUpperCase(), ownershipPercent, units, true,
+                issuerWithLedger.getLedgerAccountAlias());
+        asset.setLedgerTokenId(tokenId);
+        return assetRepository.save(asset);
     }
 }

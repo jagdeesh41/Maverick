@@ -46,7 +46,7 @@ export default function RmKycApprove() {
               <strong>{k.fullName}</strong> <span style={{ color: 'var(--lb-ink-soft)' }}>({k.username})</span>
               <div style={{ color: 'var(--lb-ink-soft)', marginTop: 4 }}>{k.documentType} — {k.documentNumber}</div>
             </div>
-            <ProofViewer value={k.proofPhotoBase64} />
+            <ProofViewer value={k.proofPhotoUrl} />
           </div>
           <button
             className="lb-btn" style={{ marginTop: 12 }}

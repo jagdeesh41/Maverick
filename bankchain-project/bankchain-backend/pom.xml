@@ -18,6 +18,11 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- Spring Boot 3.1.0's default Lombok predates JDK 21 support and
+             breaks on javac's internal AST changes (NoSuchFieldError on
+             JCTree$JCImport.qualid) when compiled with a JDK 21 toolchain -
+             override with a version that has confirmed JDK 21 support. -->
+        <lombok.version>1.18.34</lombok.version>
     </properties>
 
     <dependencies>
@@ -54,6 +59,14 @@
                  chain pulled in, so it doesn't fight with AuthInterceptor below. -->
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Google Cloud Storage client - backs GcsFileService (proof photo
+                 uploads + signed read URLs). Talks to project ltc-hack2026-team13's
+                 "maverick_gcs" bucket via Application Default Credentials. -->
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-storage</artifactId>
+            <version>2.70.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

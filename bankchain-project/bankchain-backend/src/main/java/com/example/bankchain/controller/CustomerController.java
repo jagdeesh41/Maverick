@@ -75,7 +75,7 @@ public class CustomerController {
     /** Customer responds to an RM hold by resubmitting proof - goes back into the issuance queue. */
     @PostMapping("/assets/{id}/resubmit")
     public ApiResponse<AssetResponse> resubmitProof(@PathVariable Long id, @RequestBody ResubmitProofRequest request) {
-        return ApiResponse.ok("Proof resubmitted - back in RM's issuance queue", assetService.resubmitProof(id, request.getProofDocumentBase64()));
+        return ApiResponse.ok("Proof resubmitted - back in RM's issuance queue", assetService.resubmitProof(id, request.getProofDocumentKey()));
     }
 
     @GetMapping("/assets/{userId}")

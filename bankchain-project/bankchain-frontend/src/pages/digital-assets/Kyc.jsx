@@ -11,7 +11,7 @@ import InfoNote from '../../components/InfoNote.jsx';
 // (check_approval_allowed) in TransferService.approveTransfer().
 export default function Kyc() {
   const { user } = useAuth();
-  const [form, setForm] = useState({ documentType: 'Passport', documentNumber: '', proofPhotoBase64: '' });
+  const [form, setForm] = useState({ documentType: 'Passport', documentNumber: '', proofPhotoKey: '' });
   const [current, setCurrent] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -66,8 +66,9 @@ export default function Kyc() {
         </div>
         <FileUpload
           label="Photo of your document"
-          value={form.proofPhotoBase64}
-          onChange={(v) => setForm((f) => ({ ...f, proofPhotoBase64: v }))}
+          category="kyc-photo"
+          value={form.proofPhotoKey}
+          onChange={(v) => setForm((f) => ({ ...f, proofPhotoKey: v }))}
         />
         {error && <div className="lb-error-banner">{error}</div>}
         <button className="lb-btn" disabled={busy}>{busy ? 'Submitting…' : 'Submit for approval'}</button>
