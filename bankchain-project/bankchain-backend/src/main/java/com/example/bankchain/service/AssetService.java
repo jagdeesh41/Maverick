@@ -13,6 +13,7 @@ import com.example.bankchain.exception.ResourceNotFoundException;
 import com.example.bankchain.repository.AssetHoldingRepository;
 import com.example.bankchain.repository.AssetRepository;
 import com.example.bankchain.service.ledger.LedgerService;
+import com.example.bankchain.service.storage.GcsFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +34,7 @@ public class AssetService {
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final SmartContractClient smartContractClient;
+    private final GcsFileService gcsFileService;
 
     public AssetResponse issueAsset(IssueAssetRequest request) {
         User issuer = userService.getUserOrThrow(request.getOwnerId());
@@ -46,7 +48,7 @@ public class AssetService {
                 .policyTemplate(request.getPolicyTemplate())
                 .nominee(request.getNominee())
                 .relationType(request.getRelationType())
-                .proofDocumentBase64(request.getProofDocumentBase64())
+                .proofDocumentKey(request.getProofDocumentKey())
                 .status("PENDING_CONFIRMATION")
                 .evidenceHash("Qm" + UUID.randomUUID().toString().replace("-", "").substring(0, 8))
                 .build();
@@ -79,7 +81,7 @@ public class AssetService {
             throw new BusinessRuleException("Asset #" + assetId + " is not awaiting confirmation (status: " + asset.getStatus() + ").");
         }
 
-        boolean hasProof = asset.getProofDocumentBase64() != null && !asset.getProofDocumentBase64().isBlank();
+        boolean hasProof = asset.getProofDocumentKey() != null && !asset.getProofDocumentKey().isBlank();
         RuleCheckResponse decision = smartContractClient.evaluateIssuance(asset.getAssetType(), asset.getOwnershipPercent(), hasProof);
         if (!decision.isAllowed()) {
             auditService.log("Asset issuance confirmation rejected", "Smart contract (Python)", "Blocked", decision.getReason());
@@ -124,13 +126,13 @@ public class AssetService {
     }
 
     /** Customer responds to a hold by resubmitting proof - goes back into the queue as PENDING_CONFIRMATION. */
-    public AssetResponse resubmitProof(Long assetId, String proofDocumentBase64) {
+    public AssetResponse resubmitProof(Long assetId, String proofDocumentKey) {
         Asset asset = getAssetOrThrow(assetId);
         if (!"ON_HOLD".equals(asset.getStatus())) {
             throw new BusinessRuleException("Asset #" + assetId + " is not on hold.");
         }
-        if (proofDocumentBase64 != null && !proofDocumentBase64.isBlank()) {
-            asset.setProofDocumentBase64(proofDocumentBase64);
+        if (proofDocumentKey != null && !proofDocumentKey.isBlank()) {
+            asset.setProofDocumentKey(proofDocumentKey);
         }
         asset.setStatus("PENDING_CONFIRMATION");
         Asset saved = assetRepository.save(asset);
@@ -218,7 +220,7 @@ public class AssetService {
                 .policyTemplate(asset.getPolicyTemplate())
                 .nominee(asset.getNominee())
                 .relationType(asset.getRelationType())
-                .proofDocumentBase64(asset.getProofDocumentBase64())
+                .proofDocumentUrl(gcsFileService.signedUrl(asset.getProofDocumentKey()))
                 .status(asset.getStatus())
                 .rmNote(asset.getRmNote())
                 .priority(asset.isPriority())

@@ -19,7 +19,7 @@ export default function ClaimProperty() {
   const [form, setForm] = useState({
     assetId: searchParams.get('assetId') || '',
     claimantRelation: 'CHILD',
-    certificateProofBase64: '',
+    certificateProofKey: '',
   });
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -38,7 +38,7 @@ export default function ClaimProperty() {
         assetId: Number(form.assetId),
         claimantUserId: user.userId,
         claimantRelation: form.claimantRelation,
-        certificateProofBase64: form.certificateProofBase64,
+        certificateProofKey: form.certificateProofKey,
       });
       setResult(claim);
     } catch (err) {
@@ -74,8 +74,9 @@ export default function ClaimProperty() {
         </div>
         <FileUpload
           label="Certificate / relationship proof (e.g. death certificate + your ID)"
-          value={form.certificateProofBase64}
-          onChange={(v) => update('certificateProofBase64', v)}
+          category="claim-certificate"
+          value={form.certificateProofKey}
+          onChange={(v) => update('certificateProofKey', v)}
           required
         />
 

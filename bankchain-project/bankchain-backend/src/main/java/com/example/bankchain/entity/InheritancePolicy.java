@@ -33,8 +33,12 @@ public class InheritancePolicy {
     // issuer keeps for themselves until the trigger condition is met.
     private Integer selfRetainedPercent;
 
-    @Lob
-    private String proofDocumentBase64;
+    // GCS object key for the supporting document - never the file itself.
+    private String proofDocumentKey;
+
+    // Signed read URL, populated at read time from proofDocumentKey - never persisted.
+    @Transient
+    private String proofDocumentUrl;
 
     private String disputeAction;
 

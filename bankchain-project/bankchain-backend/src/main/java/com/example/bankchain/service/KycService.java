@@ -8,6 +8,7 @@ import com.example.bankchain.entity.User;
 import com.example.bankchain.exception.BusinessRuleException;
 import com.example.bankchain.exception.ResourceNotFoundException;
 import com.example.bankchain.repository.KycRepository;
+import com.example.bankchain.service.storage.GcsFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ public class KycService {
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final SmartContractClient smartContractClient;
+    private final GcsFileService gcsFileService;
 
     /** Customer submits KYC documents. Starts as PENDING - needs RM/compliance approval. */
     public Kyc submit(KycRequest request) {
@@ -33,13 +35,13 @@ public class KycService {
 
         kyc.setDocumentType(request.getDocumentType());
         kyc.setDocumentNumber(request.getDocumentNumber());
-        kyc.setProofPhotoBase64(request.getProofPhotoBase64());
+        kyc.setProofPhotoKey(request.getProofPhotoKey());
         kyc.setStatus("PENDING");
 
         Kyc saved = kycRepository.save(kyc);
         auditService.log("KYC submitted", "KYC/eKYC", "Pending", "User #" + user.getId());
         notificationService.notify(user, "Your KYC was submitted - status PENDING.", "KYC", user.getId(), "PENDING");
-        return saved;
+        return withUrl(saved);
     }
 
     /** RM/compliance approves a pending KYC record - required before that user can buy in a transfer. */
@@ -52,7 +54,7 @@ public class KycService {
             auditService.log("KYC approval rejected", "Smart contract (Python)", "Blocked", decision.getReason());
             throw new BusinessRuleException("Document number failed validation: " + decision.getReason());
         }
-        if (kyc.getProofPhotoBase64() == null || kyc.getProofPhotoBase64().isBlank()) {
+        if (kyc.getProofPhotoKey() == null || kyc.getProofPhotoKey().isBlank()) {
             auditService.log("KYC approval rejected", "Smart contract (Python)", "Blocked", "No proof photo attached.");
             throw new BusinessRuleException("No proof photo attached to this KYC record - cannot approve.");
         }
@@ -61,12 +63,13 @@ public class KycService {
         Kyc saved = kycRepository.save(kyc);
         auditService.log("KYC approved", "Smart contract (Python)", "Success", decision.getReason());
         notificationService.notify(kyc.getUser(), "Your KYC was APPROVED - you can now be a buyer in transfers.", "KYC", userId, "APPROVED");
-        return saved;
+        return withUrl(saved);
     }
 
     public Kyc getForUser(Long userId) {
-        return kycRepository.findByUserId(userId)
+        Kyc kyc = kycRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("No KYC record for user: " + userId));
+        return withUrl(kyc);
     }
 
     /** Every KYC record still PENDING - this is what gives RM an actual queue instead of lookup-by-id. */
@@ -78,9 +81,15 @@ public class KycService {
                         .fullName(k.getUser().getFullName())
                         .documentType(k.getDocumentType())
                         .documentNumber(k.getDocumentNumber())
-                        .proofPhotoBase64(k.getProofPhotoBase64())
+                        .proofPhotoUrl(gcsFileService.signedUrl(k.getProofPhotoKey()))
                         .status(k.getStatus())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    /** Populates the transient signed-URL field before a Kyc entity goes back to the frontend. */
+    private Kyc withUrl(Kyc kyc) {
+        kyc.setProofPhotoUrl(gcsFileService.signedUrl(kyc.getProofPhotoKey()));
+        return kyc;
     }
 }

@@ -19,5 +19,5 @@ public class RecoveryRequestDto {
     @NotBlank
     private String email;
 
-    private String proofDocumentBase64;
+    private String proofDocumentKey;
 }

@@ -63,7 +63,7 @@ export default function RmClaims() {
             </div>
             <div style={{ textAlign: 'right' }}>
               <span className={`lb-status ${c.status.toLowerCase()}`}>{c.status.replace('_', ' ')}</span>
-              <div style={{ marginTop: 8 }}><ProofViewer value={c.certificateProofBase64} /></div>
+              <div style={{ marginTop: 8 }}><ProofViewer value={c.certificateProofUrl} /></div>
             </div>
           </div>
 

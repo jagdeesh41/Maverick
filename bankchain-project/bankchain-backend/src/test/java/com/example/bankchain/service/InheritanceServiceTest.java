@@ -6,6 +6,7 @@ import com.example.bankchain.entity.Asset;
 import com.example.bankchain.entity.InheritancePolicy;
 import com.example.bankchain.exception.BusinessRuleException;
 import com.example.bankchain.repository.InheritancePolicyRepository;
+import com.example.bankchain.service.storage.GcsFileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,13 +34,14 @@ class InheritanceServiceTest {
     @Mock private AuditService auditService;
     @Mock private SmartContractClient smartContractClient;
     @Mock private NotificationService notificationService;
+    @Mock private GcsFileService gcsFileService;
 
     private InheritanceService inheritanceService;
 
     @BeforeEach
     void setUp() {
         inheritanceService = new InheritanceService(
-                inheritancePolicyRepository, assetService, auditService, smartContractClient, notificationService);
+                inheritancePolicyRepository, assetService, auditService, smartContractClient, notificationService, gcsFileService);
     }
 
     private NomineeDto nominee(String name, int percent) {

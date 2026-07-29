@@ -9,6 +9,7 @@ import com.example.bankchain.entity.Nominee;
 import com.example.bankchain.exception.BusinessRuleException;
 import com.example.bankchain.exception.ResourceNotFoundException;
 import com.example.bankchain.repository.InheritancePolicyRepository;
+import com.example.bankchain.service.storage.GcsFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ public class InheritanceService {
     private final AuditService auditService;
     private final SmartContractClient smartContractClient; // the Python rule engine
     private final NotificationService notificationService;
+    private final GcsFileService gcsFileService;
 
     public InheritancePolicy setPolicy(InheritancePolicyRequest request) {
         Asset asset = assetService.getAssetOrThrow(request.getAssetId());
@@ -65,7 +67,7 @@ public class InheritanceService {
         policy.getNominees().addAll(nominees);
 
         policy.setTriggerCondition(request.getTriggerCondition());
-        policy.setProofDocumentBase64(request.getProofDocumentBase64());
+        policy.setProofDocumentKey(request.getProofDocumentKey());
         policy.setDisputeAction(request.getDisputeAction());
         policy.setSelfRetainedPercent(100 - totalAllocation);
         policy.setStatus("ACTIVE");
@@ -77,16 +79,19 @@ public class InheritanceService {
         notificationService.notify(asset.getIssuer(), "Inheritance policy for asset #" + asset.getId()
                 + " saved - " + incoming.size() + " nominee(s), triggers " + request.getTriggerCondition() + ".",
                 "INHERITANCE", asset.getId(), "INFO");
-        return saved;
+        return withUrl(saved);
     }
 
     public InheritancePolicy getPolicyForAsset(Long assetId) {
-        return inheritancePolicyRepository.findByAssetId(assetId)
+        InheritancePolicy policy = inheritancePolicyRepository.findByAssetId(assetId)
                 .orElseThrow(() -> new ResourceNotFoundException("No inheritance policy for asset: " + assetId));
+        return withUrl(policy);
     }
 
     public InheritancePolicy raiseDispute(Long assetId) {
-        InheritancePolicy policy = getPolicyForAsset(assetId);
+        InheritancePolicy policy = inheritancePolicyRepository.findByAssetId(assetId)
+                .orElseThrow(() -> new ResourceNotFoundException("No inheritance policy for asset: " + assetId));
+        // (not routed through getPolicyForAsset() to avoid a redundant signed-URL generation before we mutate it below)
 
         RuleCheckResponse decision = smartContractClient.evaluateDispute(assetId, policy.getStatus());
 
@@ -98,6 +103,12 @@ public class InheritanceService {
         }
 
         auditService.log("Inheritance dispute raised", "Smart contract (Python)", "Recorded", decision.getReason());
-        return saved;
+        return withUrl(saved);
+    }
+
+    /** Populates the transient signed-URL field before an InheritancePolicy entity goes back to the frontend. */
+    private InheritancePolicy withUrl(InheritancePolicy policy) {
+        policy.setProofDocumentUrl(gcsFileService.signedUrl(policy.getProofDocumentKey()));
+        return policy;
     }
 }

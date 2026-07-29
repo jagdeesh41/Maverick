@@ -15,6 +15,7 @@ import com.example.bankchain.repository.KycRepository;
 import com.example.bankchain.repository.TransferRepository;
 import com.example.bankchain.repository.UserRepository;
 import com.example.bankchain.service.ledger.LedgerService;
+import com.example.bankchain.service.storage.GcsFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +38,7 @@ public class TransferService {
     private final AuditService auditService;
     private final SmartContractClient smartContractClient; // the Python rule engine
     private final NotificationService notificationService;
+    private final GcsFileService gcsFileService;
 
     /**
      * Customer initiates a transfer/DvP request for units they hold.
@@ -82,7 +84,7 @@ public class TransferService {
                 .units(request.getUnits())
                 .settlementRail(request.getSettlementRail() != null
                         ? request.getSettlementRail() : "Tokenised deposit rail")
-                .transfereeProofBase64(request.getTransfereeProofBase64())
+                .transfereeProofKey(request.getTransfereeProofKey())
                 .buyerProofType(request.getBuyerProofType())
                 .buyerProofValue(request.getBuyerProofValue())
                 .consentGiven(request.isConsentGiven())
@@ -101,7 +103,7 @@ public class TransferService {
                 notificationService.notify(buyer, seller.getFullName() + " wants to send you " + transfer.getUnits()
                         + " unit(s) of asset #" + asset.getId() + " - awaiting RM approval.", "TRANSFER", saved.getId(), "PENDING"));
 
-        return saved;
+        return withUrl(saved);
     }
 
     /**
@@ -177,7 +179,7 @@ public class TransferService {
         notificationService.notify(buyer.orElse(null), "You received " + transfer.getUnits() + " unit(s) of asset #"
                 + asset.getId() + " (" + asset.getAssetType() + ") - it's now in your My Assets.", "TRANSFER", transferId, "APPROVED");
 
-        return saved;
+        return withUrl(saved);
     }
 
     public Transfer rejectTransfer(Long transferId) {
@@ -187,14 +189,14 @@ public class TransferService {
         auditService.log("Transfer rejected by RM", "RM review", "Recorded", "Transfer #" + transferId);
         notificationService.notify(transfer.getSeller(), "Your transfer #" + transferId + " was rejected by RM.",
                 "TRANSFER", transferId, "REJECTED");
-        return saved;
+        return withUrl(saved);
     }
 
     /** Customer flags their own pending transfer as urgent - RM queues surface these first. */
     public Transfer markPriority(Long transferId, boolean priority) {
         Transfer transfer = getTransferOrThrow(transferId);
         transfer.setPriority(priority);
-        return transferRepository.save(transfer);
+        return withUrl(transferRepository.save(transfer));
     }
 
     /** RM holds a transfer and asks for reverification (extra proof) before deciding. */
@@ -206,7 +208,7 @@ public class TransferService {
         auditService.log("Transfer held for reverification", "RM review", "On hold", "Transfer #" + transferId + " - " + transfer.getRmNote());
         notificationService.notify(transfer.getSeller(), "Your transfer #" + transferId + " needs more info: " + transfer.getRmNote(),
                 "TRANSFER", transferId, "ON_HOLD");
-        return saved;
+        return withUrl(saved);
     }
 
     public List<Transfer> getPendingTransfers() {
@@ -261,5 +263,11 @@ public class TransferService {
     private Transfer getTransferOrThrow(Long id) {
         return transferRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Transfer not found: " + id));
+    }
+
+    /** Populates the transient signed-URL field before a Transfer entity goes back to the frontend. */
+    private Transfer withUrl(Transfer transfer) {
+        transfer.setTransfereeProofUrl(gcsFileService.signedUrl(transfer.getTransfereeProofKey()));
+        return transfer;
     }
 }

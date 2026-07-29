@@ -16,5 +16,5 @@ public class KycRequest {
     @NotBlank
     private String documentNumber;
 
-    private String proofPhotoBase64;
+    private String proofPhotoKey;
 }

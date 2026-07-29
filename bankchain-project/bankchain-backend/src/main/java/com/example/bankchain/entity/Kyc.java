@@ -25,8 +25,12 @@ public class Kyc {
     @Column(nullable = false)
     private String documentNumber;
 
-    @Lob
-    private String proofPhotoBase64;
+    // GCS object key for the KYC proof photo - never the file itself.
+    private String proofPhotoKey;
+
+    // Signed read URL, populated at read time from proofPhotoKey - never persisted.
+    @Transient
+    private String proofPhotoUrl;
 
     @Column(nullable = false)
     private String status; // PENDING, APPROVED, REJECTED

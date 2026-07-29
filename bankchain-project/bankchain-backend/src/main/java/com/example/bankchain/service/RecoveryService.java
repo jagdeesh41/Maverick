@@ -4,10 +4,12 @@ import com.example.bankchain.dto.RecoveryRequestDto;
 import com.example.bankchain.entity.RecoveryRequest;
 import com.example.bankchain.entity.User;
 import com.example.bankchain.repository.RecoveryRequestRepository;
+import com.example.bankchain.service.storage.GcsFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +20,7 @@ public class RecoveryService {
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final SmartContractClient smartContractClient;
+    private final GcsFileService gcsFileService;
 
     public RecoveryRequest submitRequest(RecoveryRequestDto dto) {
         User user = userService.getUserOrThrow(dto.getUserId());
@@ -28,7 +31,7 @@ public class RecoveryService {
                 .verificationMethod(dto.getVerificationMethod())
                 .phoneNumber(dto.getPhoneNumber())
                 .email(dto.getEmail())
-                .proofDocumentBase64(dto.getProofDocumentBase64())
+                .proofDocumentKey(dto.getProofDocumentKey())
                 .status("REQUESTED")
                 .build();
 
@@ -36,16 +39,16 @@ public class RecoveryService {
         auditService.log("Recovery request submitted", "IAM", "Pending",
                 "User #" + user.getId() + " - " + dto.getRecoveryReason());
         notificationService.notify(user, "Your recovery request was submitted - status REQUESTED.", "RECOVERY", saved.getId(), "PENDING");
-        return saved;
+        return withUrl(saved);
     }
 
     public List<RecoveryRequest> getRequestsForUser(Long userId) {
-        return recoveryRequestRepository.findByUserId(userId);
+        return recoveryRequestRepository.findByUserId(userId).stream().map(this::withUrl).collect(Collectors.toList());
     }
 
     /** Every recovery request, newest first - gives RM an actual worklist. */
     public List<RecoveryRequest> getAll() {
-        return recoveryRequestRepository.findAllByOrderByCreatedAtDesc();
+        return recoveryRequestRepository.findAllByOrderByCreatedAtDesc().stream().map(this::withUrl).collect(Collectors.toList());
     }
 
     public RecoveryRequest advanceStatus(Long requestId, String newStatus) {
@@ -55,7 +58,7 @@ public class RecoveryService {
         // Moving past REQUESTED for the first time requires the contract's sign-off -
         // RM can't just click through without the minimum info on file.
         if ("REQUESTED".equals(request.getStatus())) {
-            boolean hasProof = request.getProofDocumentBase64() != null && !request.getProofDocumentBase64().isBlank();
+            boolean hasProof = request.getProofDocumentKey() != null && !request.getProofDocumentKey().isBlank();
             boolean hasPhone = request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank();
             boolean hasEmail = request.getEmail() != null && !request.getEmail().isBlank();
             com.example.bankchain.dto.RuleCheckResponse decision = smartContractClient.evaluateRecoveryAdvance(hasProof, hasPhone, hasEmail);
@@ -69,6 +72,12 @@ public class RecoveryService {
         RecoveryRequest saved = recoveryRequestRepository.save(request);
         notificationService.notify(request.getUser(), "Your recovery request advanced to " + newStatus + ".",
                 "RECOVERY", requestId, "RESET".equals(newStatus) ? "APPROVED" : "PENDING");
-        return saved;
+        return withUrl(saved);
+    }
+
+    /** Populates the transient signed-URL field before a RecoveryRequest entity goes back to the frontend. */
+    private RecoveryRequest withUrl(RecoveryRequest request) {
+        request.setProofDocumentUrl(gcsFileService.signedUrl(request.getProofDocumentKey()));
+        return request;
     }
 }

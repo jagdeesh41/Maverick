@@ -34,6 +34,6 @@ public class IssueAssetRequest {
     // SELF, FAMILY, FRIEND, FAMILY_FRIEND, RELATIVE
     private String relationType;
 
-    // base64 photo/document proving the asset's existence/ownership
-    private String proofDocumentBase64;
+    // GCS object key (from POST /customer/files/upload) proving the asset's existence/ownership
+    private String proofDocumentKey;
 }

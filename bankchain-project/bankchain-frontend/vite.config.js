@@ -1,11 +1,18 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// Frontend runs on 5173 by default. Backend (Spring Boot) runs on 8081.
-// See .env.example for how the frontend finds the backend URL.
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173
-  }
-})
+    host: true,
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''), // Strips '/api' so Spring Boot gets '/auth/login', etc.
+      },
+    },
+  },
+});

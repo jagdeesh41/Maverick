@@ -22,7 +22,7 @@ public class AssetResponse {
     private String policyTemplate;
     private String nominee;
     private String relationType;
-    private String proofDocumentBase64;
+    private String proofDocumentUrl;
     private String status;
     private String rmNote;
     private boolean priority;

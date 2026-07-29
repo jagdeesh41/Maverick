@@ -61,6 +61,14 @@
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
         <dependency>
+            <!-- Google Cloud Storage client - backs GcsFileService (proof photo
+                 uploads + signed read URLs). Talks to project ltc-hack2026-team13's
+                 "maverick_gcs" bucket via Application Default Credentials. -->
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-storage</artifactId>
+            <version>2.70.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>

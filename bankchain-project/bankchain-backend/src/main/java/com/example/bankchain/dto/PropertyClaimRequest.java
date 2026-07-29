@@ -16,5 +16,5 @@ public class PropertyClaimRequest {
     @NotBlank
     private String claimantRelation; // SPOUSE, CHILD, PARENT, SIBLING, OTHER
 
-    private String certificateProofBase64;
+    private String certificateProofKey;
 }

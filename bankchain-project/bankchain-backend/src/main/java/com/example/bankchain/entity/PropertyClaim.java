@@ -38,8 +38,12 @@ public class PropertyClaim {
     @Column(nullable = false)
     private String claimantRelation; // SPOUSE, CHILD, PARENT, SIBLING, OTHER
 
-    @Lob
-    private String certificateProofBase64; // death certificate + relationship proof
+    // GCS object key for the death certificate + relationship proof - never the file itself.
+    private String certificateProofKey;
+
+    // Signed read URL, populated at read time from certificateProofKey - never persisted.
+    @Transient
+    private String certificateProofUrl;
 
     @Column(nullable = false)
     private String status; // SUBMITTED, ON_HOLD, APPROVED, REJECTED

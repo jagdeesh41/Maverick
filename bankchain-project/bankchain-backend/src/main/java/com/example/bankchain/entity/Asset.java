@@ -44,8 +44,12 @@ public class Asset {
     // Who the nominee is to the issuer - SELF, FAMILY, FRIEND, FAMILY_FRIEND, RELATIVE
     private String relationType;
 
-    @Lob
-    private String proofDocumentBase64; // ownership/asset proof photo, base64
+    // GCS object key for the ownership/asset proof photo - never the file itself.
+    private String proofDocumentKey;
+
+    // Signed read URL, populated at read time from proofDocumentKey - never persisted.
+    @Transient
+    private String proofDocumentUrl;
 
     @Column(nullable = false)
     private String status; // PENDING_CONFIRMATION, ON_HOLD, ACTIVE, FROZEN
